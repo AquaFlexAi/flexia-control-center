@@ -5,16 +5,24 @@ export async function GET() {
     const supabase = await createClient();
 
     // 1. Fetch Credits
-    const { data: credits } = await supabase
+    const { data: credits, error: creditsError } = await supabase
         .from('organization_credits')
         .select('balance')
         .single();
 
+    if (creditsError) {
+        return NextResponse.json({ error: `Credits fetch failed: ${creditsError.message}`, details: creditsError }, { status: 500 });
+    }
+
     // 2. Fetch Aggregated Telemetry (last 24h)
-    const { data: telemetry } = await supabase
+    const { data: telemetry, error: telemetryError } = await supabase
         .from('telemetry')
         .select('value, metric_type')
         .gte('recorded_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+    if (telemetryError) {
+        return NextResponse.json({ error: `Telemetry fetch failed: ${telemetryError.message}`, details: telemetryError }, { status: 500 });
+    }
 
     // Calculate Average Compute and Total Tokens
     let totalTokens = 0;

@@ -11,7 +11,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -28,10 +28,12 @@ services:
       GOTRUE_DB_DATABASE_URL: ${GOTRUE_DB_DATABASE_URL}
       GOTRUE_JWT_SECRET: ${GOTRUE_JWT_SECRET}
       GOTRUE_SITE_URL: ${GOTRUE_SITE_URL}
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${GOTRUE_EXTERNAL_EMAIL_ENABLED}
       GOTRUE_DB_MAX_POOL_SIZE: 20
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${GOTRUE_API_EXTERNAL_URL}
+      GOTRUE_DB_DRIVER: ${GOTRUE_DB_DRIVER}
 
   rest:
     container_name: flexia-supabase-rest
@@ -64,4 +66,4 @@ services:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
       KONG_PROXY_LISTEN: 0.0.0.0:8000
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001 hl
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001

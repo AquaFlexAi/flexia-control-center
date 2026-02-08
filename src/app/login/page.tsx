@@ -7,8 +7,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const isDev = process.env.NODE_ENV === 'development';
+    const [email, setEmail] = useState(isDev ? "admin@flexia.io" : "");
+    const [password, setPassword] = useState(isDev ? "password123" : "");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -19,17 +20,27 @@ export default function LoginPage() {
         setLoading(true);
         setError(null);
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        try {
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
-        if (error) {
-            setError(error.message);
+            const result = await response.json();
+
+            if (!response.ok) {
+                setError(result.error || "Login failed");
+                setLoading(false);
+            } else {
+                router.push("/");
+                router.refresh();
+            }
+        } catch (err: any) {
+            setError("An unexpected error occurred. Please try again.");
             setLoading(false);
-        } else {
-            router.push("/");
-            router.refresh();
         }
     };
 
