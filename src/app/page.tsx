@@ -24,21 +24,26 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch services
+      // 1. Fetch core services
       const { data: services } = await supabase.from('services').select('*');
-      const { data: credits } = await supabase.from('organization_credits').select('balance').single();
+      if (services) setCoreServices(services);
 
-      if (services) {
-        setCoreServices(services);
-
-        // Mock dynamic stats based on real data
-        setStats([
-          { label: "Active Tokens", value: "1.2M", change: "+12%", icon: Zap, color: "text-yellow-400" },
-          { label: "Compute Usage", value: "64%", change: "-5%", icon: Cpu, color: "text-blue-400" },
-          { label: "Api Uptime", value: "99.98%", change: "+0.01%", icon: Globe, color: "text-emerald-400" },
-          { label: "FLX Credits", value: credits?.balance?.toLocaleString() || "0", change: "Live", icon: Activity, color: "text-purple-400" },
-        ]);
+      // 2. Fetch live stats from centralized API
+      try {
+        const statsResp = await fetch('/api/stats');
+        if (statsResp.ok) {
+          const statsData = await statsResp.json();
+          setStats([
+            { label: "Active Tokens", value: statsData.tokens, change: "+12%", icon: Zap, color: "text-yellow-400" },
+            { label: "Compute Usage", value: statsData.compute, change: "-5%", icon: Cpu, color: "text-blue-400" },
+            { label: "Api Uptime", value: statsData.uptime, change: "Live", icon: Globe, color: "text-emerald-400" },
+            { label: "FLX Credits", value: statsData.credits.toLocaleString(), change: "Live", icon: Activity, color: "text-purple-400" },
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard stats", err);
       }
+
       setLoading(false);
     }
 

@@ -90,6 +90,34 @@ CREATE TABLE IF NOT EXISTS logs (
         TIME ZONE DEFAULT now()
 );
 
+-- Organization Members
+CREATE TABLE IF NOT EXISTS public.organization_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    role TEXT DEFAULT 'developer', -- 'owner', 'admin', 'developer'
+    last_activity TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT now(),
+        color TEXT DEFAULT 'bg-purple-500',
+        joined_at TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT now()
+);
+
+-- Billing Transactions
+CREATE TABLE IF NOT EXISTS public.transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
+    org_id UUID REFERENCES public.organization_credits (org_id),
+    type TEXT NOT NULL, -- 'topup', 'usage', 'subscription'
+    description TEXT NOT NULL,
+    amount FLOAT NOT NULL,
+    status TEXT DEFAULT 'completed',
+    created_at TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT now()
+);
+
 -- Enable RLS
 ALTER TABLE logs ENABLE ROW LEVEL SECURITY;
 

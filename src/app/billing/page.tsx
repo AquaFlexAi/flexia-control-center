@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     CreditCard,
     Zap,
@@ -8,10 +8,41 @@ import {
     Check,
     BadgePercent,
     TrendingUp,
-    Wallet
+    Wallet,
+    Loader2
 } from "lucide-react";
 
 export default function BillingPage() {
+    const [billingData, setBillingData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchBilling() {
+            try {
+                const resp = await fetch('/api/billing');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    setBillingData(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch billing data", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchBilling();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="h-[60vh] flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
+            </div>
+        );
+    }
+
+    const { credits, transactions } = billingData || { credits: { balance: 0, tier: 'starter' }, transactions: [] };
+
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
             <div>
@@ -27,12 +58,12 @@ export default function BillingPage() {
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Available Credits</p>
-                                <h2 className="text-5xl font-extrabold tracking-tighter italic">14,250 <span className="text-xl font-normal not-italic opacity-60 ml-1">FLX</span></h2>
+                                <h2 className="text-5xl font-extrabold tracking-tighter italic">{credits.balance.toLocaleString()} <span className="text-xl font-normal not-italic opacity-60 ml-1">FLX</span></h2>
                             </div>
                             <Wallet className="w-10 h-10 opacity-40" />
                         </div>
                         <p className="mt-6 text-sm opacity-90 max-w-sm">
-                            Your credits are shared across all FlexIA services. Estimated to last 14 days based on your current usage.
+                            Your credits are shared across all FlexIA services. Estimated to last {Math.floor(credits.balance / 1000)} days based on your current usage.
                         </p>
                     </div>
                     <div className="relative z-10 flex gap-4 mt-8">
@@ -63,7 +94,7 @@ export default function BillingPage() {
                         ))}
                     </div>
                     <div className="mt-6 pt-6 border-t border-white/5 flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Highest: <span className="text-white font-bold">$124.50</span></span>
+                        <span className="text-muted-foreground">Status: <span className="text-white font-bold uppercase tracking-widest text-[10px]">{credits.tier}</span></span>
                         <span className="text-emerald-400 font-bold flex items-center gap-1">
                             <BadgePercent className="w-4 h-4" /> -12% avg
                         </span>
@@ -78,15 +109,15 @@ export default function BillingPage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[
-                        { name: "Starter", price: "$0", active: false, features: ["1 Agent", "Basic Router", "Community Support"] },
-                        { name: "Professional", price: "$49", active: true, features: ["10 Agents", "Advanced Router", "Priority Logic", "Slack Support"] },
-                        { name: "Enterprise", price: "Custom", active: false, features: ["Unlimited Agents", "Custom LLM Hosting", "Dedicated Manager", "99.99% SLA"] },
+                        { name: "Starter", price: "$0", id: "starter", features: ["1 Agent", "Basic Router", "Community Support"] },
+                        { name: "Professional", price: "$49", id: "professional", features: ["10 Agents", "Advanced Router", "Priority Logic", "Slack Support"] },
+                        { name: "Enterprise", price: "Custom", id: "enterprise", features: ["Unlimited Agents", "Custom LLM Hosting", "Dedicated Manager", "99.99% SLA"] },
                     ].map((plan, i) => (
                         <div key={i} className={cn(
                             "glass-card border-2 flex flex-col gap-6 relative overflow-hidden transition-all duration-500",
-                            plan.active ? "border-purple-500/50 shadow-purple-500/10 shadow-2xl scale-[1.02]" : "border-white/5 hover:border-white/10"
+                            credits.tier === plan.id ? "border-purple-500/50 shadow-purple-500/10 shadow-2xl scale-[1.02]" : "border-white/5 hover:border-white/10"
                         )}>
-                            {plan.active && (
+                            {credits.tier === plan.id && (
                                 <div className="absolute top-0 right-0 bg-purple-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
                                     Current Plan
                                 </div>
@@ -110,11 +141,11 @@ export default function BillingPage() {
                             </ul>
                             <button className={cn(
                                 "w-full py-3 rounded-xl font-bold text-sm transition-all duration-300",
-                                plan.active
+                                credits.tier === plan.id
                                     ? "bg-white/10 text-white cursor-default"
                                     : "glass hover:bg-white/10 text-white"
                             )}>
-                                {plan.active ? "Installed" : "Upgrade Plan"}
+                                {credits.tier === plan.id ? "Installed" : "Upgrade Plan"}
                             </button>
                         </div>
                     ))}
@@ -143,18 +174,17 @@ export default function BillingPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {[
-                                { id: "TXN-848293", date: "Oct 24, 2025", desc: "Credit Top-up (5000 FLX)", amount: "+$50.00" },
-                                { id: "SUB-102933", date: "Oct 20, 2025", desc: "Professional Subscription Renewal", amount: "-$49.00" },
-                                { id: "TXN-293844", date: "Oct 15, 2025", desc: "Credit Top-up (2000 FLX)", amount: "+$20.00" },
-                                { id: "TXN-112039", date: "Oct 01, 2025", desc: "Enterprise API Connector Fee", amount: "-$150.00" },
-                            ].map((txn, i) => (
+                            {transactions.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground text-sm font-medium">No recent transactions.</td>
+                                </tr>
+                            ) : transactions.map((txn: any, i: number) => (
                                 <tr key={i} className="hover:bg-white/5 transition-colors group">
-                                    <td className="px-6 py-4 font-mono text-xs text-muted-foreground group-hover:text-white transition-colors">{txn.id}</td>
-                                    <td className="px-6 py-4 text-sm text-muted-foreground">{txn.date}</td>
-                                    <td className="px-6 py-4 text-sm font-medium text-white">{txn.desc}</td>
-                                    <td className={cn("px-6 py-4 text-sm font-bold", txn.amount.startsWith("+") ? "text-emerald-400" : "text-white")}>
-                                        {txn.amount}
+                                    <td className="px-6 py-4 font-mono text-[10px] text-muted-foreground group-hover:text-white transition-colors uppercase">{txn.id.slice(0, 8)}</td>
+                                    <td className="px-6 py-4 text-sm text-muted-foreground">{new Date(txn.created_at).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-white">{txn.description}</td>
+                                    <td className={cn("px-6 py-4 text-sm font-bold", txn.type === 'topup' ? "text-emerald-400" : "text-white")}>
+                                        {txn.type === 'topup' ? '+' : '-'}${Math.abs(txn.amount).toFixed(2)}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <button className="p-2 glass rounded-lg hover:bg-white/10 transition-all text-purple-400">

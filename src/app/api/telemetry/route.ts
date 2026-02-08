@@ -40,3 +40,52 @@ export async function GET(request: Request) {
         history: generateData()
     });
 }
+
+export async function POST(request: Request) {
+    const supabase = await createClient();
+    const { serviceId, metricType, value } = await request.json();
+
+    // 1. Insert Telemetry
+    const { error: telemetryError } = await supabase
+        .from('telemetry')
+        .insert({
+            service_id: serviceId,
+            metric_type: metricType,
+            value: value
+        });
+
+    if (telemetryError) {
+        return NextResponse.json({ error: telemetryError.message }, { status: 500 });
+    }
+
+    // 2. If it's token usage, deduct credits (Simulated Worker Logic)
+    if (metricType === 'tokens') {
+        const costPerToken = 0.0001; // Example rate
+        const totalCost = value * costPerToken;
+
+        // Update balance
+        const { data: credits } = await supabase
+            .from('organization_credits')
+            .select('org_id, balance')
+            .single();
+
+        if (credits) {
+            await supabase
+                .from('organization_credits')
+                .update({ balance: credits.balance - value }) // 1:1 for simplicity in simulation
+                .eq('org_id', credits.org_id);
+
+            // Log transaction
+            await supabase
+                .from('transactions')
+                .insert({
+                    type: 'usage',
+                    description: `API Usage: ${value} tokens`,
+                    amount: -totalCost,
+                    status: 'completed'
+                });
+        }
+    }
+
+    return NextResponse.json({ status: 'success' });
+}
