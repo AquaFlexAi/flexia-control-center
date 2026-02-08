@@ -21,11 +21,13 @@ import {
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import ServiceSparkline from "@/components/services/service-sparkline";
+import TerminalConsole from "@/components/services/terminal-console";
 
 export default function ServicesPage() {
     const [services, setServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+    const [selectedTerminal, setSelectedTerminal] = useState<any | null>(null);
     const supabase = createClient();
 
     useEffect(() => {
@@ -156,10 +158,11 @@ export default function ServicesPage() {
                         {/* Actions */}
                         <div className="flex flex-wrap gap-3 w-full md:w-auto">
                             <button
+                                onClick={() => setSelectedTerminal(service)}
                                 disabled={service.status === 'transitioning'}
                                 className="flex-1 md:flex-none glass px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all disabled:opacity-30 active:scale-95"
                             >
-                                <Terminal className="w-4 h-4 text-purple-400" /> Logs
+                                <Terminal className="w-4 h-4 text-purple-400" /> Terminal
                             </button>
 
                             <div className="w-px h-8 bg-white/10 hidden md:block mx-1" />
@@ -267,7 +270,20 @@ export default function ServicesPage() {
                         </div>
                     </div>
                 </div>
-            </div >
+            </div>
+
+            {/* Terminal Modal Overlay */}
+            {selectedTerminal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full max-w-4xl relative">
+                        <TerminalConsole
+                            serviceId={selectedTerminal.id}
+                            serviceName={selectedTerminal.name}
+                            onClose={() => setSelectedTerminal(null)}
+                        />
+                    </div>
+                </div>
+            )}
         </div >
     );
 }
