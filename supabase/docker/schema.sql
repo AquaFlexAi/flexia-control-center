@@ -40,6 +40,20 @@ VALUES (
         'FlexIA Control'
     ) ON CONFLICT (id) DO NOTHING;
 
+-- Service Telemetry (Time-series)
+CREATE TABLE IF NOT EXISTS public.telemetry (
+    id BIGSERIAL PRIMARY KEY,
+    service_id UUID REFERENCES public.services (id) ON DELETE CASCADE,
+    metric_type TEXT NOT NULL, -- 'cpu', 'ram', 'tokens'
+    value FLOAT NOT NULL,
+    recorded_at TIMESTAMP
+    WITH
+        TIME ZONE DEFAULT now()
+);
+
+-- Index for fast time-series queries
+CREATE INDEX IF NOT EXISTS idx_telemetry_service_time ON public.telemetry (service_id, recorded_at DESC);
+
 -- Enable RLS
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 

@@ -4,17 +4,31 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const serviceId = searchParams.get('serviceId');
+    const supabase = await createClient();
 
-    // In a real scenario, we'd fetch time-series data from Redis or a metrics table.
-    // For now, we'll generate realistic mock telemetry for the sparklines.
+    // Try to fetch real metrics from the last 20 minutes
+    const { data, error } = await supabase
+        .from('telemetry')
+        .select('value, tokens, recorded_at')
+        .eq('service_id', serviceId)
+        .order('recorded_at', { ascending: false })
+        .limit(20);
 
+    if (data && data.length > 0) {
+        return NextResponse.json({
+            serviceId,
+            history: data.reverse()
+        });
+    }
+
+    // Fallback to generator if no real data yet
     const generateData = () => {
         const data = [];
         const now = Date.now();
         for (let i = 20; i >= 0; i--) {
             data.push({
-                time: new Date(now - i * 60000).toISOString(),
-                value: Math.floor(Math.random() * 40) + 10, // Base load
+                recorded_at: new Date(now - i * 60000).toISOString(),
+                value: Math.floor(Math.random() * 40) + 10,
                 tokens: Math.floor(Math.random() * 500) + 100
             });
         }
