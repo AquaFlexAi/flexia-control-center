@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     ClipboardList,
     Map,
@@ -11,24 +11,44 @@ import {
     AlertCircle,
     GanttChartSquare,
     Filter,
-    ArrowRight
+    ArrowRight,
+    Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function PlanningPage() {
     const [activeTab, setActiveTab] = useState("roadmap");
+    const [tickets, setTickets] = useState<any[]>([]);
+    const [stats, setStats] = useState<any>({
+        active: "0",
+        completed: "0",
+        critical: "0",
+        eta: "--"
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchPlanning() {
+            try {
+                const resp = await fetch('/api/clickup');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.tasks) setTickets(data.tasks);
+                    if (data.stats) setStats(data.stats);
+                }
+            } catch (err) {
+                console.error("Failed to fetch planning data", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchPlanning();
+    }, []);
 
     const roadmaps = [
         { title: "SaaS Launch", status: "In Progress", progress: 65, color: "purple" },
         { title: "Mobile Integration", status: "Planned", progress: 10, color: "blue" },
         { title: "Analytics Engine", status: "In Development", progress: 40, color: "orange" },
-    ];
-
-    const tickets = [
-        { id: "FLX-101", title: "Implement ClickUp Sync", status: "To Do", priority: "High", team: "Core" },
-        { id: "FLX-102", title: "Refactor Docker Orchestrator", status: "In Progress", priority: "Critical", team: "Infra" },
-        { id: "FLX-103", title: "Global Branding UI Fix", status: "Review", priority: "Medium", team: "UI" },
-        { id: "FLX-104", title: "Agent Zero SSH Proxy", status: "Testing", priority: "High", team: "Agent0" },
     ];
 
     return (
@@ -53,10 +73,10 @@ export default function PlanningPage() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: "Active Tickets", value: "24", icon: Clock, color: "text-blue-400" },
-                    { label: "Completed", value: "142", icon: CheckCircle2, color: "text-green-400" },
-                    { label: "Critical Bugs", value: "3", icon: AlertCircle, color: "text-red-400" },
-                    { label: "Release ETA", value: "12d", icon: Calendar, color: "text-purple-401" },
+                    { label: "Active Tickets", value: stats.active, icon: Clock, color: "text-blue-400" },
+                    { label: "Completed", value: stats.completed, icon: CheckCircle2, color: "text-green-400" },
+                    { label: "Critical Bugs", value: stats.critical, icon: AlertCircle, color: "text-red-400" },
+                    { label: "Release ETA", value: stats.eta, icon: Calendar, color: "text-purple-401" },
                 ].map((stat, i) => (
                     <div key={i} className="glass-card flex items-center gap-4 py-4">
                         <div className={cn("p-3 rounded-xl bg-white/5", stat.color)}>
@@ -116,7 +136,19 @@ export default function PlanningPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {tickets.map((t, i) => (
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-12 text-center">
+                                                <Loader2 className="w-8 h-8 text-purple-500 animate-spin mx-auto opacity-20" />
+                                            </td>
+                                        </tr>
+                                    ) : tickets.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-12 text-center text-muted-foreground text-xs font-medium">
+                                                No tickets found in ClickUp space.
+                                            </td>
+                                        </tr>
+                                    ) : tickets.map((t, i) => (
                                         <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
                                             <td className="py-4 pl-4 font-mono text-xs text-purple-400">{t.id}</td>
                                             <td className="py-4 text-sm font-medium text-white">{t.title}</td>
