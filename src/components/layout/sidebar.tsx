@@ -11,7 +11,8 @@ import {
     ShieldCheck,
     Activity,
     Boxes,
-    Palette
+    Palette,
+    ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/" },
     { icon: Boxes, label: "Services", href: "/services" },
     { icon: Palette, label: "Branding", href: "/branding" },
+    { icon: ClipboardList, label: "Planning", href: "/planning" },
     { icon: ShieldCheck, label: "Security", href: "/security" },
     { icon: Terminal, label: "Logs", href: "/logs" },
     { icon: CreditCard, label: "Billing", href: "/billing" },
