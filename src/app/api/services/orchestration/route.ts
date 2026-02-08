@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, getUserRole } from '@/utils/supabase/server';
 import { getDockerInstance, SERVICE_CONTAINER_MAP } from '@/lib/docker';
+import { hasPermission } from '@/utils/rbac';
 
 export async function POST(request: Request) {
     const supabase = await createClient();
@@ -8,6 +9,12 @@ export async function POST(request: Request) {
 
     if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // RBAC Check
+    const role = await getUserRole();
+    if (!hasPermission(role, 'manage_services')) {
+        return NextResponse.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
     }
 
     const { serviceId, action } = await request.json();

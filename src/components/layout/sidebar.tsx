@@ -15,20 +15,25 @@ import {
     ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermission } from "@/hooks/usePermission";
 
 const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-    { icon: Boxes, label: "Services", href: "/services" },
-    { icon: Palette, label: "Branding", href: "/branding" },
-    { icon: ClipboardList, label: "Planning", href: "/planning" },
-    { icon: ShieldCheck, label: "Security", href: "/security" },
-    { icon: Terminal, label: "Logs", href: "/logs" },
-    { icon: CreditCard, label: "Billing", href: "/billing" },
-    { icon: Settings, label: "Settings", href: "/settings" },
+    { icon: LayoutDashboard, label: "Dashboard", href: "/", permission: 'view_dashboard' },
+    { icon: Boxes, label: "Services", href: "/services", permission: 'manage_services' },
+    { icon: Palette, label: "Branding", href: "/branding", permission: 'view_settings' },
+    { icon: ClipboardList, label: "Planning", href: "/planning", permission: 'view_settings' },
+    { icon: ShieldCheck, label: "Security", href: "/security", permission: 'view_settings' },
+    { icon: Terminal, label: "Logs", href: "/logs", permission: 'view_logs' },
+    { icon: CreditCard, label: "Billing", href: "/billing", permission: 'view_billing' },
+    { icon: Settings, label: "Settings", href: "/settings", permission: 'view_settings' },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { can, role, loading } = usePermission();
+
+    // If loading, show a skeleton or just basic items
+    if (loading) return null; // Or return a loading skeleton
 
     return (
         <aside className="w-64 glass-nav h-screen fixed left-0 top-0 z-50 flex flex-col">
@@ -42,6 +47,8 @@ export function Sidebar() {
 
                 <nav className="space-y-1">
                     {menuItems.map((item) => {
+                        if (!can(item.permission as any)) return null;
+
                         const Icon = item.icon;
                         const isActive = pathname === item.href;
 
@@ -72,9 +79,9 @@ export function Sidebar() {
 
             <div className="mt-auto p-6 border-t border-white/5">
                 <div className="glass-card !p-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600" />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-inner" />
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white truncate">Pro Plan</p>
+                        <p className="text-sm font-semibold text-white truncate capitalize">{role?.replace('_', ' ') || 'Guest'}</p>
                         <p className="text-xs text-muted-foreground truncate">Active Member</p>
                     </div>
                 </div>

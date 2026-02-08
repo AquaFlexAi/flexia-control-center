@@ -22,12 +22,14 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import ServiceSparkline from "@/components/services/service-sparkline";
 import TerminalConsole from "@/components/services/terminal-console";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function ServicesPage() {
     const [services, setServices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionInProgress, setActionInProgress] = useState<string | null>(null);
     const [selectedTerminal, setSelectedTerminal] = useState<any | null>(null);
+    const { can, loading: roleLoading } = usePermission();
     const supabase = createClient();
 
     useEffect(() => {
@@ -76,7 +78,7 @@ export default function ServicesPage() {
         }
     };
 
-    if (loading) {
+    if (loading || roleLoading) {
         return (
             <div className="h-[60vh] flex items-center justify-center">
                 <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />

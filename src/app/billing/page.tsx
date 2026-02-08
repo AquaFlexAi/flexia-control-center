@@ -11,12 +11,15 @@ import {
     BadgePercent,
     TrendingUp,
     Wallet,
-    Loader2
+    Loader2,
+    Shield
 } from "lucide-react";
+import { usePermission } from "@/hooks/usePermission";
 
 export default function BillingPage() {
     const [billingData, setBillingData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const { can, loading: roleLoading } = usePermission();
 
     useEffect(() => {
         async function fetchBilling() {
@@ -35,7 +38,7 @@ export default function BillingPage() {
         fetchBilling();
     }, []);
 
-    if (loading) {
+    if (loading || roleLoading) {
         return (
             <div className="h-[60vh] flex items-center justify-center">
                 <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />

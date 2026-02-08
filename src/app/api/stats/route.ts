@@ -4,6 +4,9 @@ import { NextResponse } from 'next/server';
 export async function GET() {
     const supabase = await createClient();
 
+    // Debugging Role Issues
+    // const { data: { user }, error: userError } = await supabase.auth.getUser();
+
     // 1. Fetch Credits
     const { data: credits, error: creditsError } = await supabase
         .from('organization_credits')

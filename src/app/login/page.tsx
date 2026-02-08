@@ -35,6 +35,12 @@ export default function LoginPage() {
                 setError(result.error || "Login failed");
                 setLoading(false);
             } else {
+                // IMPORTANT: Sync the session to the client-side Supabase instance
+                // This ensures getUser() works immediately without waiting for a refresh/cookie cycle
+                if (result.session) {
+                    await supabase.auth.setSession(result.session);
+                }
+
                 router.push("/");
                 router.refresh();
             }
