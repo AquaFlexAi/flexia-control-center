@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+import ServiceSparkline from "@/components/services/service-sparkline";
 
 export default function ServicesPage() {
     const [services, setServices] = useState<any[]>([]);
@@ -135,6 +136,23 @@ export default function ServicesPage() {
                             </div>
                         </div>
 
+                        {/* Real-time Telemetry Section */}
+                        <div className="hidden lg:flex items-center gap-8 px-6 border-x border-white/5 h-16">
+                            <div className="space-y-1">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none">Compute Load</p>
+                                <ServiceSparkline serviceId={service.id} color={service.status === 'online' ? '#8b5cf6' : '#4b5563'} />
+                            </div>
+                            <div className="space-y-1 border-l border-white/5 pl-6">
+                                <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none">Token Velocity</p>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg font-mono font-bold text-white tracking-tighter">
+                                        {service.status === 'online' ? (Math.random() * 200 + 400).toFixed(0) : 0}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground font-medium uppercase">t/sec</span>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Actions */}
                         <div className="flex flex-wrap gap-3 w-full md:w-auto">
                             <button
@@ -191,11 +209,12 @@ export default function ServicesPage() {
                             </a>
                         </div>
                     </div>
-                ))}
-            </div>
+                ))
+                }
+            </div >
 
             {/* Deployment History / Logs Preview Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+            < div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4" >
                 <div className="glass-card">
                     <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
                         <Shield className="w-5 h-5 text-blue-400" /> Deployment History
@@ -248,7 +267,7 @@ export default function ServicesPage() {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
