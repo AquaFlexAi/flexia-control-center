@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Set environment to production (optional, but good for some libs)
+# ENV NODE_ENV=production
+
+# Run the worker
+# tsx automatically uses tsconfig.json for paths
+CMD ["npx", "tsx", "src/workers/health-monitor.ts"]

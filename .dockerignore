@@ -1,0 +1,5 @@
+node_modules
+.git
+.next
+.vscode
+supabase/docker/kafka_data

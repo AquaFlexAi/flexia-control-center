@@ -1,0 +1,3 @@
+-- User seeding is now handled by scripts/seed_users.js
+-- This file is intentionally left empty of operations to prevent conflicts.
+-- Please run `npm run seed` or `node scripts/seed_users.js` to seed users.

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+// import "@/styles/main.scss";
 import { Sidebar } from "@/components/layout/sidebar";
-import { TopBar } from "@/components/layout/topbar";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { createClient } from "@/utils/supabase/server";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -26,14 +27,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="flex min-h-screen bg-[#030303] text-foreground">
-          {!isAuthPage && <Sidebar />}
-          <div className={isAuthPage ? "flex-1 flex flex-col" : "flex-1 ml-64 flex flex-col"}>
-            {!isAuthPage && <TopBar />}
-            <main className={isAuthPage ? "flex-1" : "flex-1 p-8"}>
-              {children}
-            </main>
-          </div>
+        <div className="flex h-screen overflow-hidden bg-[#030303] text-foreground">
+          <MainLayout isAuthPage={isAuthPage}>
+            {children}
+          </MainLayout>
         </div>
       </body>
     </html>

@@ -1,7 +1,12 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { authorize } from "@/utils/supabase/auth-check";
+import { API_ROUTE_CONFIG } from "@/config/api-permissions";
 
 export async function GET(request: Request) {
+    const { authorized, response } = await authorize(API_ROUTE_CONFIG['/api/telemetry'].GET!);
+    if (!authorized) return response!;
+
     const { searchParams } = new URL(request.url);
     const serviceId = searchParams.get('serviceId');
     const supabase = await createClient();
@@ -42,6 +47,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    const { authorized, response } = await authorize(API_ROUTE_CONFIG['/api/telemetry'].POST!);
+    if (!authorized) return response!;
+
     const supabase = await createClient();
     const { serviceId, metricType, value } = await request.json();
 

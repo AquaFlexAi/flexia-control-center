@@ -1,15 +1,13 @@
-import { createClient, getUserRole } from "@/utils/supabase/server";
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
-import { hasPermission } from "@/utils/rbac";
+import { authorize } from "@/utils/supabase/auth-check";
 
 export async function GET() {
-    const supabase = await createClient();
-
     // RBAC Check
-    const role = await getUserRole();
-    if (!hasPermission(role, 'view_billing')) {
-        return NextResponse.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
-    }
+    const { authorized, response } = await authorize('view_billing');
+    if (!authorized) return response!;
+
+    const supabase = await createClient();
 
     // 1. Fetch Credits
     const { data: credits } = await supabase

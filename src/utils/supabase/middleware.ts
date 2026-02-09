@@ -37,6 +37,14 @@ export async function updateSession(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/api/supabase/auth')
 
     if (!user && !isPublicRoute) {
+        // Return 401 for API routes
+        if (request.nextUrl.pathname.startsWith('/api/')) {
+            return new NextResponse(
+                JSON.stringify({ success: false, message: 'Authentication required' }),
+                { status: 401, headers: { 'content-type': 'application/json' } }
+            )
+        }
+
         // Redirect to login if not authenticated and not a public route
         const url = request.nextUrl.clone()
         url.pathname = '/login'
@@ -48,6 +56,25 @@ export async function updateSession(request: NextRequest) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
         return NextResponse.redirect(url)
+    }
+
+    // Inject Proxy Token for Agent Zero
+    if (user && request.nextUrl.pathname.startsWith('/api/agent-zero')) {
+        const requestHeaders = new Headers(request.headers)
+        requestHeaders.set('X-Agent-Zero-Proxy-Token', process.env.AGENT_ZERO_PROXY_TOKEN || '')
+        
+        const newResponse = NextResponse.next({
+            request: {
+                headers: requestHeaders,
+            }
+        })
+        
+        // Copy cookies from supabaseResponse
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+            newResponse.cookies.set(cookie)
+        })
+        
+        return newResponse
     }
 
     return supabaseResponse

@@ -1,20 +1,23 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
+import { authorize } from "@/utils/supabase/auth-check";
 
 export async function GET() {
+    // 1. RBAC Check
+    const { authorized, response } = await authorize('view_dashboard');
+    if (!authorized) return response!;
+
     const supabase = await createClient();
 
-    // Debugging Role Issues
-    // const { data: { user }, error: userError } = await supabase.auth.getUser();
-
     // 1. Fetch Credits
+    // Use maybeSingle() to handle case where user has no org or multiple orgs (RLS should handle it)
     const { data: credits, error: creditsError } = await supabase
         .from('organization_credits')
         .select('balance')
-        .single();
+        .maybeSingle();
 
     if (creditsError) {
-        return NextResponse.json({ error: `Credits fetch failed: ${creditsError.message}`, details: creditsError }, { status: 500 });
+        return NextResponse.json({ error: `Credits fetch failed: ${creditsError.message}` }, { status: 500 });
     }
 
     // 2. Fetch Aggregated Telemetry (last 24h)

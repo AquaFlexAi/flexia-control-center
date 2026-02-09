@@ -1,49 +1,41 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
-import { type Role, type Permission, hasPermission } from '@/utils/rbac';
+import { type Role, type Permission } from '@/utils/rbac';
 
 export function usePermission() {
     const [role, setRole] = useState<Role | null>(null);
+    const [permissions, setPermissions] = useState<Permission[]>([]);
     const [loading, setLoading] = useState(true);
-    const supabase = createClient();
 
     useEffect(() => {
-        async function fetchRole() {
+        async function fetchPermissions() {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-
-                if (!user) {
-                    setRole(null);
-                    return;
-                }
-
-                const { data, error } = await supabase
-                    .from('organization_members')
-                    .select('role')
-                    .eq('email', user.email)
-                    .single();
-
-                if (data && !error) {
-                    setRole(data.role as Role);
+                const res = await fetch('/api/auth/permissions');
+                if (res.ok) {
+                    const data = await res.json();
+                    setRole(data.role);
+                    setPermissions(data.permissions);
                 } else {
-                    setRole('viewer'); // Default fallback
+                    setRole(null);
+                    setPermissions([]);
                 }
             } catch (err) {
                 console.error('RBAC Error:', err);
-                setRole('viewer');
+                setRole(null);
             } finally {
                 setLoading(false);
             }
         }
 
-        fetchRole();
+        fetchPermissions();
     }, []);
 
     const can = (permission: Permission) => {
-        if (loading) return false; // Fail safe while loading
-        return hasPermission(role as Role, permission);
+        if (loading) return false;
+        // System Admin bypass (optional, but good for UI consistency)
+        if (role === 'system_admin') return true;
+        return permissions.includes(permission);
     };
 
     return { role, loading, can };

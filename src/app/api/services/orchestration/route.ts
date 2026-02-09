@@ -1,23 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createClient, getUserRole } from '@/utils/supabase/server';
-import { getDockerInstance, SERVICE_CONTAINER_MAP } from '@/lib/docker';
-import { hasPermission } from '@/utils/rbac';
+import { createClient } from '@/utils/supabase/server';
+import { getDockerInstance, SERVICE_CONTAINER_MAP, SERVICE_DEFAULTS, createContainer } from '@/lib/docker';
+import { authorize } from '@/utils/supabase/auth-check';
 
 export async function POST(request: Request) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // RBAC Check
-    const role = await getUserRole();
-    if (!hasPermission(role, 'manage_services')) {
-        return NextResponse.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
-    }
+    const { authorized, response, user } = await authorize('manage_services');
+    if (!authorized || !user) return response!;
 
-    const { serviceId, action } = await request.json();
+    const supabase = await createClient();
+
+    const { serviceId, action, instanceId } = await request.json();
 
     if (!serviceId || !['start', 'stop', 'restart'].includes(action)) {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -34,9 +27,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Service not found' }, { status: 404 });
     }
 
-    const containerName = SERVICE_CONTAINER_MAP[service.name];
+    // Determine container name: use specific instanceId if provided, else fallback to map/default
+    let containerName = instanceId;
     if (!containerName) {
-        return NextResponse.json({ error: 'No docker mapping for this service' }, { status: 400 });
+        containerName = SERVICE_CONTAINER_MAP[service.name];
+    }
+    
+    // If still no container name (and no instanceId provided), we might need to derive it
+    if (!containerName) {
+        // Fallback: try to guess standard naming convention if map fails
+        // This is important for dynamic services not in the static map
+        // e.g. "Agent Zero Cluster" -> "agent-zero-cluster-0" (default to first instance)
+        const slug = service.name.toLowerCase().replace(/ /g, '-');
+        containerName = `${slug}-0`; 
+    }
+
+    if (!containerName) {
+        return NextResponse.json({ error: 'Could not determine container target' }, { status: 400 });
     }
 
     try {
@@ -55,25 +62,65 @@ export async function POST(request: Request) {
         const docker = getDockerInstance();
         const container = docker.getContainer(containerName);
 
-        // If it's Dev mode, we need to handle volumes/bind mounts
-        // Note: Standard dockerode .start() doesn't easily re-configure volumes.
-        // In a final implementation, we might need to remove and re-create the container.
-        // For now, we'll assume the container is pre-configured or we log the intent.
-
-        // We don't await the full docker action if we want to return fast,
-        // but for this implementation we'll handle it synchronously to finalize the state.
-        // In a larger system, this would be a queued task.
-
         if (action === 'start') {
-            // In DEV mode, we'd ideally recreate the container with the local source_path bind-mounted.
-            // E.g. Binds: [`${service.source_path}:/app`]
-            await container.start();
+            try {
+                const info = await container.inspect();
+                if (!info.State.Running) {
+                    await container.start();
+                }
+            } catch (err: any) {
+                if (err.statusCode === 404) {
+                    // Container doesn't exist, create it
+                    const defaults = SERVICE_DEFAULTS[service.name];
+                    if (!defaults) {
+                         throw new Error(`No default configuration found for ${service.name}. Cannot auto-provision.`);
+                    }
+
+                    await createContainer({
+                        name: containerName,
+                        image: defaults.image,
+                        ports: defaults.ports,
+                        env: defaults.env
+                    });
+                } else {
+                    throw err;
+                }
+            }
             await supabase.from('services').update({ status: 'online', pending_action: null }).eq('id', serviceId);
         } else if (action === 'stop') {
-            await container.stop();
+            try {
+                await container.stop();
+            } catch (err: any) {
+                if (err.statusCode === 304) {
+                    // Already stopped, ignore
+                } else if (err.statusCode === 404) {
+                    // Container missing, effectively stopped
+                } else {
+                    throw err;
+                }
+            }
             await supabase.from('services').update({ status: 'offline', pending_action: null }).eq('id', serviceId);
         } else if (action === 'restart') {
-            await container.restart();
+            try {
+                await container.restart();
+            } catch (err: any) {
+                if (err.statusCode === 404) {
+                    // If missing, treat restart as start
+                    const defaults = SERVICE_DEFAULTS[service.name];
+                    if (defaults) {
+                        await createContainer({
+                            name: containerName,
+                            image: defaults.image,
+                            ports: defaults.ports,
+                            env: defaults.env
+                        });
+                    } else {
+                        throw new Error(`Container missing and no default config for ${service.name}`);
+                    }
+                } else {
+                    throw err;
+                }
+            }
             await supabase.from('services').update({ status: 'online', pending_action: null }).eq('id', serviceId);
         }
 

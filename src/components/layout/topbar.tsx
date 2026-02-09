@@ -1,11 +1,22 @@
 "use client";
 
 import React from "react";
-import { Search, Bell, User, Command } from "lucide-react";
+import { Search, Bell, User, Command, Menu } from "lucide-react";
 
-export function TopBar() {
+interface TopBarProps {
+    onMenuClick?: () => void;
+}
+
+export function TopBar({ onMenuClick }: TopBarProps) {
     return (
-        <header className="h-20 border-b border-white/5 flex items-center px-8 bg-[#030303]/40 backdrop-blur-md sticky top-0 z-40">
+        <header className="h-20 border-b border-white/5 flex items-center px-4 lg:px-8 bg-[#030303]/40 backdrop-blur-md sticky top-0 z-40 gap-4">
+            <button
+                onClick={onMenuClick}
+                className="lg:hidden p-2 -ml-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
+            >
+                <Menu className="w-6 h-6" />
+            </button>
+
             <div className="flex-1 max-w-xl">
                 <div className="relative group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-purple-400 transition-colors" />
