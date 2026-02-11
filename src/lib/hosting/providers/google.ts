@@ -5,7 +5,7 @@ export const GCP_REGIONS = [
 ];
 
 export const GCP_MACHINE_TYPES = [
-    'e2-micro', 'e2-small', 'e2-medium', 
+    'e2-micro', 'e2-small', 'e2-medium',
     'n1-standard-1', 'n1-standard-2', 'n1-standard-4',
     'n2-standard-2', 'n2-standard-4', 'n2-standard-8'
 ];
@@ -151,10 +151,10 @@ export class GoogleCloudProvider implements HostingProvider {
             //     projectId: this.config.projectId,
             // });
             // await auth.getClient();
-            
+
             // Simulating API latency
             await new Promise(resolve => setTimeout(resolve, 350));
-            
+
             return {
                 success: true,
                 latencyMs: Date.now() - start,
@@ -174,10 +174,10 @@ export class GoogleCloudProvider implements HostingProvider {
         try {
             // Simulating a healthy node for now
             await new Promise(resolve => setTimeout(resolve, 150));
-            
+
             // In reality: 
             // const [instance] = await compute.instance(nodeId).get();
-            
+
             return {
                 nodeId,
                 status: 'healthy',
@@ -185,7 +185,7 @@ export class GoogleCloudProvider implements HostingProvider {
                 details: 'Instance is RUNNING. CPU utilization normal.'
             };
         } catch (error: any) {
-             return {
+            return {
                 nodeId,
                 status: 'unknown',
                 lastChecked: new Date(),
@@ -235,8 +235,51 @@ export class GoogleCloudProvider implements HostingProvider {
     }
 
     async listNodes(): Promise<ComputeNode[]> {
-        // Mock Implementation
-        return [];
+        // Return mock nodes for UI testing
+        return [
+            {
+                id: 'gcp-instance-1',
+                name: 'flexia-inference-v1',
+                provider: 'gcp',
+                status: 'ready',
+                region: 'us-central1-a',
+                ipAddress: '34.122.45.101',
+                connectionConfig: {
+                    host: '34.122.45.101',
+                    protocol: 'ssh',
+                    credentials: { sshKey: 'mock-key' }
+                },
+                resources: {
+                    cpuCores: 8,
+                    ramGb: 32,
+                    diskGb: 100,
+                    gpu: {
+                        model: 'NVIDIA T4',
+                        count: 1
+                    }
+                },
+                tags: ['inference', 'gpu']
+            },
+            {
+                id: 'gcp-instance-2',
+                name: 'flexia-router-primary',
+                provider: 'gcp',
+                status: 'ready',
+                region: 'us-central1-b',
+                ipAddress: '34.123.89.202',
+                connectionConfig: {
+                    host: '34.123.89.202',
+                    protocol: 'ssh',
+                    credentials: { sshKey: 'mock-key' }
+                },
+                resources: {
+                    cpuCores: 2,
+                    ramGb: 4,
+                    diskGb: 20
+                },
+                tags: ['router', 'http-server']
+            }
+        ];
     }
 
     private getMockCpu(type: string): number {
@@ -259,5 +302,29 @@ export class GoogleCloudProvider implements HostingProvider {
         if (type.includes('standard-4')) return 15;
         if (type.includes('standard-8')) return 30;
         return 4;
+    }
+
+    async getRegions(): Promise<{ id: string; name: string }[]> {
+        return GCP_REGIONS.map(id => ({
+            id,
+            name: `${id} (Google Cloud)`
+        }));
+    }
+
+    async getInstanceTypes(): Promise<{ id: string; name: string; cpu: number; ram: number; price: number }[]> {
+        return GCP_MACHINE_TYPES.map(id => ({
+            id,
+            name: id,
+            cpu: this.getMockCpu(id),
+            ram: this.getMockRam(id),
+            price: this.estimatePrice(id)
+        }));
+    }
+
+    private estimatePrice(type: string): number {
+        // Very rough estimation based on vCPU/RAM
+        const cpu = this.getMockCpu(type);
+        const ram = this.getMockRam(type);
+        return (cpu * 0.03) + (ram * 0.004);
     }
 }

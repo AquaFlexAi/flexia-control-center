@@ -6,6 +6,8 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    const authHeader = request.headers.get('authorization')
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -24,6 +26,9 @@ export async function updateSession(request: NextRequest) {
                     )
                 },
             },
+            global: {
+                headers: authHeader ? { Authorization: authHeader } : {}
+            }
         }
     )
 
@@ -34,9 +39,14 @@ export async function updateSession(request: NextRequest) {
     const isLoginPage = request.nextUrl.pathname === '/login'
     const isPublicRoute = isLoginPage ||
         request.nextUrl.pathname.startsWith('/api/auth') ||
-        request.nextUrl.pathname.startsWith('/api/supabase/auth')
+        request.nextUrl.pathname.startsWith('/api/supabase/auth') ||
+        request.nextUrl.pathname.startsWith('/api/instances') ||
+        request.nextUrl.pathname.startsWith('/api/webhooks/stripe')
 
-    if (!user && !isPublicRoute) {
+    // E2E Test Bypass
+    const isE2EBypass = process.env.NODE_ENV === 'development' && request.headers.get('x-flexia-e2e-token') === 'flexia-dev-bypass';
+
+    if (!user && !isPublicRoute && !isE2EBypass) {
         // Return 401 for API routes
         if (request.nextUrl.pathname.startsWith('/api/')) {
             return new NextResponse(
@@ -62,18 +72,18 @@ export async function updateSession(request: NextRequest) {
     if (user && request.nextUrl.pathname.startsWith('/api/agent-zero')) {
         const requestHeaders = new Headers(request.headers)
         requestHeaders.set('X-Agent-Zero-Proxy-Token', process.env.AGENT_ZERO_PROXY_TOKEN || '')
-        
+
         const newResponse = NextResponse.next({
             request: {
                 headers: requestHeaders,
             }
         })
-        
+
         // Copy cookies from supabaseResponse
         supabaseResponse.cookies.getAll().forEach((cookie) => {
             newResponse.cookies.set(cookie)
         })
-        
+
         return newResponse
     }
 

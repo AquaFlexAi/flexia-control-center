@@ -23,8 +23,9 @@ if (!supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Initialize Hosting Manager with injected client
+// Initialize Hosting Manager and Factory with injected client
 const hostingManager = new HostingManager(supabase);
+const factory = new HostingProviderFactory(hostingManager);
 
 let topicsEnsured = false;
 
@@ -37,7 +38,7 @@ function calculateDockerStats(stats: any) {
     const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
     const systemCpuDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
     const numberCpus = stats.cpu_stats.online_cpus || stats.cpu_stats.cpu_usage.percpu_usage?.length || 1;
-    
+
     let cpuPercent = 0.0;
     if (systemCpuDelta > 0.0 && cpuDelta > 0.0) {
         cpuPercent = (cpuDelta / systemCpuDelta) * numberCpus * 100.0;
@@ -59,65 +60,52 @@ async function checkCloudInfrastructure() {
     console.log('[HealthMonitor] Checking Cloud Infrastructure...');
     try {
         const providers = await hostingManager.getProviders();
-        const enabledProviders = providers.filter(p => p.enabled);
-        const factory = HostingProviderFactory.getInstance();
+        const enabledProviders = providers.filter(p => p.enabled && p.name !== 'local');
 
-        for (const provider of enabledProviders) {
+        for (const providerDef of enabledProviders) {
             try {
-                // Initialize provider instance
-                // We need to inject the manager or credentials because factory.getProvider 
-                // usually uses the internal manager which defaults to server-side createClient.
-                // However, factory.ts:37 uses `this.manager.getProviderConfig(providerDef.id)`.
-                // We need to make sure the Factory uses OUR manager instance or we need to manually instantiate.
-                
-                // Workaround: We can't easily inject manager into the singleton Factory without refactoring Factory.
-                // But we can manually get config and instantiate provider.
-                
-                const config = await hostingManager.getProviderConfig(provider.id);
-                if (!config || !config.isActive) continue;
+                // Get all configs (accounts) for this provider
+                const configs = await hostingManager.getProviderConfigs(providerDef.id);
 
-                // Instantiate directly if possible, or use Factory if we can fix it.
-                // Let's assume we can use the factory if we update the Factory to accept a manager override, 
-                // OR we just duplicate the instantiation logic here for the worker since it's a standalone process.
-                // Actually, the simplest way is to manually instantiate based on provider name.
-                
-                let providerInstance;
-                const { HetznerProvider } = await import('../lib/hosting/providers/hetzner');
-                const { GoogleCloudProvider } = await import('../lib/hosting/providers/google');
-                // Import others as needed...
+                for (const config of configs) {
+                    if (!config.isActive) continue;
 
-                if (provider.name === 'hetzner' && config.credentials.apiToken) {
-                    providerInstance = new HetznerProvider(config.credentials.apiToken);
-                } else if (provider.name === 'gcp') {
-                    providerInstance = new GoogleCloudProvider(config.credentials);
-                }
-                
-                if (!providerInstance) continue;
+                    // Get provider instance via factory
+                    // We pass the config to bypass the factory's internal DB lookup of the default config
+                    const providerInstance = await factory.getProvider(providerDef.name, config);
 
-                // Check Nodes
-                const nodes = await providerInstance.listNodes();
-                for (const node of nodes) {
-                    // Check Health
-                    const health = await providerInstance.checkInstanceHealth(node.id);
-                    
-                    // Publish Metrics
-                    await publishEvent('infrastructure.metrics', {
-                        provider: provider.name,
-                        nodeId: node.id,
-                        name: node.name,
-                        region: node.region,
-                        status: health.status,
-                        details: health.details,
-                        ip: node.ipAddress,
-                        timestamp: new Date().toISOString()
-                    });
+                    if (!providerInstance) continue;
 
-                    // Log status
-                    console.log(`[InfraMonitor] ${provider.name}::${node.name} (${node.id}) -> ${health.status}`);
+                    // Check Nodes
+                    const nodes = await providerInstance.listNodes();
+                    for (const node of nodes) {
+                        try {
+                            // Check Health
+                            const health = await providerInstance.checkInstanceHealth(node.id);
+
+                            // Publish Metrics
+                            await publishEvent('infrastructure.metrics', {
+                                provider: providerDef.name,
+                                account: config.credentials.name || 'default',
+                                nodeId: node.id,
+                                name: node.name,
+                                region: node.region,
+                                status: health.status,
+                                details: health.details,
+                                ip: node.ipAddress,
+                                timestamp: new Date().toISOString()
+                            });
+
+                            // Log status
+                            console.log(`[InfraMonitor] ${providerDef.name}::${node.name} (${node.id}) -> ${health.status}`);
+                        } catch (nodeErr: any) {
+                            console.error(`[HealthMonitor] Failed to check node ${node.id}:`, nodeErr.message);
+                        }
+                    }
                 }
 
             } catch (err: any) {
-                console.error(`[HealthMonitor] Failed to check provider ${provider.name}:`, err.message);
+                console.error(`[HealthMonitor] Failed to check provider ${providerDef.name}:`, err.message);
             }
         }
     } catch (err) {
@@ -150,10 +138,10 @@ async function checkHealth() {
 async function checkServices() {
     try {
         // 1. Fetch all services
-    const { data: services, error } = await supabase.from('services').select('*');
-    if (error) throw error;
+        const { data: services, error } = await supabase.from('services').select('*');
+        if (error) throw error;
 
-    // 2. Fetch actual running containers (Local Node)
+        // 2. Fetch actual running containers (Local Node)
         // In a real distributed system, we would query each node or the swarm manager
         const runningContainers = await listContainers();
         const runningNames = new Set(runningContainers.map((c: any) => c.Names[0].replace('/', '')));
@@ -169,7 +157,7 @@ async function checkServices() {
                 const containerName = getContainerName(service.name, i);
                 if (runningNames.has(containerName)) {
                     activeCount++;
-                    
+
                     // Fetch detailed stats
                     try {
                         const stats = await getContainerStats(containerName);
@@ -194,7 +182,7 @@ async function checkServices() {
             // 4. Update DB if changed
             if (service.status !== newStatus) {
                 console.log(`[HealthMonitor] Updating ${service.name}: ${service.status} -> ${newStatus}`);
-                
+
                 await supabase
                     .from('services')
                     .update({ status: newStatus })
@@ -212,11 +200,12 @@ async function checkServices() {
                 });
             }
 
-            // 6. Always publish metrics (Heartbeat + Stats)
+            // 6. Publish metrics (Heartbeat + Stats) with explicit online flag
             await publishEvent('service.metrics', {
                 serviceId: service.id,
                 name: service.name,
                 status: newStatus,
+                isOnline: newStatus !== 'offline',
                 activeInstances: activeCount,
                 cpuPercent: parseFloat(totalCpu.toFixed(2)),
                 memoryBytes: totalMemory,

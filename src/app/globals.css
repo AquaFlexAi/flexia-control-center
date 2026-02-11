@@ -69,24 +69,60 @@
 }
 
 .glass-card {
-  background-color: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  transition: all 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
-.glass-nav {
-  background-color: rgba(3, 3, 3, 0.6);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+/* Status Glows (Hardware Accelerated) */
+.glow-online {
+  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.glow-offline {
+  box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.3);
+  border-color: rgba(244, 63, 94, 0.2) !important;
+}
+
+.glow-warning {
+  box-shadow: 0 0 20px -5px rgba(245, 158, 11, 0.3);
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Bento Grid Utilities */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.bento-item-header {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Optimistic Transition */
+.transition-optimistic {
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .accent-gradient {

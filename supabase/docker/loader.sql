@@ -1,6 +1,7 @@
 -- Load all initialization scripts in order
 -- This file is mounted as z99-loader.sql to ensure it runs after Supabase migrations
 
+
 \echo 'Loading 00-setup.sql...'
 \i /docker-entrypoint-initdb.d/init/00-setup.sql
 
@@ -18,6 +19,9 @@
 
 \echo 'Loading 05-system.sql...'
 \i /docker-entrypoint-initdb.d/init/05-system.sql
+
+\echo 'Loading 06-rbac.sql...'
+\i /docker-entrypoint-initdb.d/init/06-rbac.sql
 
 \echo 'Loading 98-seed-data.sql...'
 \i /docker-entrypoint-initdb.d/init/98-seed-data.sql

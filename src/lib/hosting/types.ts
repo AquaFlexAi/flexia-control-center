@@ -21,6 +21,10 @@ export interface ComputeNode {
         cpuCores: number;
         ramGb: number;
         diskGb: number;
+        gpu?: {
+            model: string;
+            count: number;
+        };
     };
     tags?: string[];
     accountName?: string;
@@ -45,10 +49,27 @@ export interface HostingProvider {
     provisionNode(config: any): Promise<ComputeNode>;
     terminateNode(nodeId: string): Promise<boolean>;
     listNodes(): Promise<ComputeNode[]>;
-    
+
     // Health Checks
     testConnection(): Promise<ConnectionResult>;
     checkInstanceHealth(nodeId: string): Promise<HealthStatus>;
+
+    // Options
+    getRegions(): Promise<{ id: string; name: string }[]>;
+    getInstanceTypes(): Promise<{ id: string; name: string; cpu: number; ram: number; price: number }[]>;
+}
+
+export interface Region {
+    id: string;
+    name: string;
+}
+
+export interface InstanceType {
+    id: string;
+    name: string;
+    cpu: number;
+    ram: number;
+    price: number;
 }
 
 export interface DeploymentTarget {

@@ -1,0 +1,809 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/mrcha/OneDrive/Desktop/APP_DEV/FlexAi/flexia-control-center[39m
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts
+[22m[39m[dotenv@17.2.4] injecting env (19) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts
+[22m[39m
+🧪 FlexAI API Test Suite
+   Target: http://localhost:3000
+   Supabase: http://127.0.0.1:8000
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts
+[22m[39m   ✅ Infrastructure verified
+
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m
+🌱 Seeding test data...
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   ✅ RBAC permissions seeded
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   👤 system_admin: test-sysadmin@flexai.test
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   👤 owner: test-owner@flexai.test
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   👤 admin: test-admin@flexai.test
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   👤 manager: test-manager@flexai.test
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   👤 developer: test-developer@flexai.test
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   👤 analyst: test-analyst@flexai.test
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   👤 viewer: test-viewer@flexai.test
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   ✅ Test users seeded
+
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m   ✅ Billing data seeded
+🌱 Seeding complete!
+
+
+ [31m×[39m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission[33m 1304[2mms[22m[39m
+[31m   → Role 'system_admin' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'owner' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'admin' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'manager' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'developer' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'analyst' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: analyst)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'viewer' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: viewer)"}: expected 403 to be 200 // Object.is equality[39m
+ [31m×[39m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/services — view_services[2m > [22mshould enforce view_services permission[33m 1253[2mms[22m[39m
+[31m   → Role 'system_admin' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'owner' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'admin' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'manager' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'developer' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'viewer' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: viewer)"}: expected 403 to be 200 // Object.is equality[39m
+ [31m×[39m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services — create_services[2m > [22mshould enforce create_services permission[33m 1352[2mms[22m[39m
+[31m   → Role 'system_admin' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'owner' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'admin' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'manager' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'developer' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+ [31m×[39m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mDELETE /api/services — delete_services[2m > [22mshould enforce delete_services permission[33m 1309[2mms[22m[39m
+[31m   → Role 'system_admin' on DELETE /api/services?id=71b24bf2-1304-454a-bf4a-dac95c1d8400: expected 200, got 403. Body: {"error":"Forbidden: You need 'delete_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'owner' on DELETE /api/services?id=71b24bf2-1304-454a-bf4a-dac95c1d8400: expected 200, got 403. Body: {"error":"Forbidden: You need 'delete_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'admin' on DELETE /api/services?id=71b24bf2-1304-454a-bf4a-dac95c1d8400: expected 200, got 403. Body: {"error":"Forbidden: You need 'delete_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+ [31m×[39m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/billing — view_billing[2m > [22mshould enforce view_billing permission[33m 1401[2mms[22m[39m
+[31m   → Role 'system_admin' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'owner' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'admin' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'manager' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+ [31m×[39m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/terminal — manage_services[2m > [22mshould enforce manage_services permission[33m 1351[2mms[22m[39m
+[31m   → Role 'system_admin' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'owner' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'admin' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'manager' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'developer' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+[90mstdout[2m | tests/api/rbac-matrix.test.ts[2m > [22m[2mRBAC Permission Matrix
+[22m[39m
+📊 Trace Report: 98 requests, 49 passed, 49 failed, avg 94ms
+   Saved to: tests/traces/rbac-matrix-1770773937803.json
+
+
+ [31m×[39m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/scraping — manage_services[2m > [22mshould enforce manage_services permission for scraping[33m 1348[2mms[22m[39m
+[31m   → Role 'system_admin' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'owner' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'admin' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'manager' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+[31m   → Role 'developer' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 7 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission
+[31m[1mAssertionError[22m: Role 'system_admin' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m23:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission
+[31m[1mAssertionError[22m: Role 'owner' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m23:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission
+[31m[1mAssertionError[22m: Role 'admin' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m23:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission
+[31m[1mAssertionError[22m: Role 'manager' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m23:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission
+[31m[1mAssertionError[22m: Role 'developer' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m23:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission
+[31m[1mAssertionError[22m: Role 'analyst' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: analyst)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m23:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/stats — view_dashboard[2m > [22mshould enforce view_dashboard permission
+[31m[1mAssertionError[22m: Role 'viewer' on GET /api/stats: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_dashboard' permission to perform this action. (Role: viewer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m23:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/services — view_services[2m > [22mshould enforce view_services permission
+[31m[1mAssertionError[22m: Role 'system_admin' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m38:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/services — view_services[2m > [22mshould enforce view_services permission
+[31m[1mAssertionError[22m: Role 'owner' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m38:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/services — view_services[2m > [22mshould enforce view_services permission
+[31m[1mAssertionError[22m: Role 'admin' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m38:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/services — view_services[2m > [22mshould enforce view_services permission
+[31m[1mAssertionError[22m: Role 'manager' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m38:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/services — view_services[2m > [22mshould enforce view_services permission
+[31m[1mAssertionError[22m: Role 'developer' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m38:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/services — view_services[2m > [22mshould enforce view_services permission
+[31m[1mAssertionError[22m: Role 'viewer' on GET /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_services' permission to perform this action. (Role: viewer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m38:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services — create_services[2m > [22mshould enforce create_services permission
+[31m[1mAssertionError[22m: Role 'system_admin' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m53:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services — create_services[2m > [22mshould enforce create_services permission
+[31m[1mAssertionError[22m: Role 'owner' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m53:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services — create_services[2m > [22mshould enforce create_services permission
+[31m[1mAssertionError[22m: Role 'admin' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m53:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services — create_services[2m > [22mshould enforce create_services permission
+[31m[1mAssertionError[22m: Role 'manager' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m53:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services — create_services[2m > [22mshould enforce create_services permission
+[31m[1mAssertionError[22m: Role 'developer' on POST /api/services: expected 200, got 403. Body: {"error":"Forbidden: You need 'create_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m53:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mDELETE /api/services — delete_services[2m > [22mshould enforce delete_services permission
+[31m[1mAssertionError[22m: Role 'system_admin' on DELETE /api/services?id=71b24bf2-1304-454a-bf4a-dac95c1d8400: expected 200, got 403. Body: {"error":"Forbidden: You need 'delete_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m73:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mDELETE /api/services — delete_services[2m > [22mshould enforce delete_services permission
+[31m[1mAssertionError[22m: Role 'owner' on DELETE /api/services?id=71b24bf2-1304-454a-bf4a-dac95c1d8400: expected 200, got 403. Body: {"error":"Forbidden: You need 'delete_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m73:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mDELETE /api/services — delete_services[2m > [22mshould enforce delete_services permission
+[31m[1mAssertionError[22m: Role 'admin' on DELETE /api/services?id=71b24bf2-1304-454a-bf4a-dac95c1d8400: expected 200, got 403. Body: {"error":"Forbidden: You need 'delete_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m73:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/billing — view_billing[2m > [22mshould enforce view_billing permission
+[31m[1mAssertionError[22m: Role 'system_admin' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m92:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/billing — view_billing[2m > [22mshould enforce view_billing permission
+[31m[1mAssertionError[22m: Role 'owner' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m92:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/billing — view_billing[2m > [22mshould enforce view_billing permission
+[31m[1mAssertionError[22m: Role 'admin' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m92:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mGET /api/billing — view_billing[2m > [22mshould enforce view_billing permission
+[31m[1mAssertionError[22m: Role 'manager' on GET /api/billing: expected 200, got 403. Body: {"error":"Forbidden: You need 'view_billing' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m92:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/terminal — manage_services[2m > [22mshould enforce manage_services permission
+[31m[1mAssertionError[22m: Role 'system_admin' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m107:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/terminal — manage_services[2m > [22mshould enforce manage_services permission
+[31m[1mAssertionError[22m: Role 'owner' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m107:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/terminal — manage_services[2m > [22mshould enforce manage_services permission
+[31m[1mAssertionError[22m: Role 'admin' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m107:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/terminal — manage_services[2m > [22mshould enforce manage_services permission
+[31m[1mAssertionError[22m: Role 'manager' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m107:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/terminal — manage_services[2m > [22mshould enforce manage_services permission
+[31m[1mAssertionError[22m: Role 'developer' on POST /api/services/terminal: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m107:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/scraping — manage_services[2m > [22mshould enforce manage_services permission for scraping
+[31m[1mAssertionError[22m: Role 'system_admin' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: system_admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m126:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/scraping — manage_services[2m > [22mshould enforce manage_services permission for scraping
+[31m[1mAssertionError[22m: Role 'owner' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: owner)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m126:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/scraping — manage_services[2m > [22mshould enforce manage_services permission for scraping
+[31m[1mAssertionError[22m: Role 'admin' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: admin)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m126:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/scraping — manage_services[2m > [22mshould enforce manage_services permission for scraping
+[31m[1mAssertionError[22m: Role 'manager' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: manager)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m126:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/35]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/api/rbac-matrix.test.ts[2m > [22mRBAC Permission Matrix[2m > [22mPOST /api/services/scraping — manage_services[2m > [22mshould enforce manage_services permission for scraping
+[31m[1mAssertionError[22m: Role 'developer' on POST /api/services/scraping: expected 200, got 403. Body: {"error":"Forbidden: You need 'manage_services' permission to perform this action. (Role: developer)"}: expected 403 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 403[39m
+
+[36m [2m❯[22m testPermissionMatrix tests/helpers/rbac-matrix.ts:[2m62:15[22m[39m
+    [90m 60| [39m            expect[33m.[39m[34msoft[39m(actualStatus[33m,[39m
+    [90m 61| [39m                `Role '${role}' on ${method} ${route}: expected ${expe…
+    [90m 62| [39m            )[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m              [31m^[39m
+    [90m 63| [39m        } [35melse[39m {
+    [90m 64| [39m            [34mexpect[39m(actualStatus)[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+[90m [2m❯[22m tests/api/rbac-matrix.test.ts:[2m126:13[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/35]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m7 failed[39m[22m[90m (7)[39m
+[2m   Start at [22m 02:38:45
+[2m   Duration [22m 12.37s[2m (transform 243ms, setup 177ms, collect 811ms, tests 10.72s, environment 0ms, prepare 362ms)[22m
+

@@ -38,6 +38,8 @@ app.prepare().then(() => {
   });
 
   const wss = new WebSocketServer({ noServer: true });
+  const wssLogs = new WebSocketServer({ noServer: true });
+  const wssServices = new WebSocketServer({ noServer: true });
 
   server.on('upgrade', (request, socket, head) => {
     const { pathname } = parse(request.url!, true);
@@ -45,6 +47,14 @@ app.prepare().then(() => {
     if (pathname === '/api/ws/terminal') {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
+      });
+    } else if (pathname === '/api/ws/logs') {
+      wssLogs.handleUpgrade(request, socket, head, (ws) => {
+        wssLogs.emit('connection', ws, request);
+      });
+    } else if (pathname === '/api/ws/services') {
+      wssServices.handleUpgrade(request, socket, head, (ws) => {
+        wssServices.emit('connection', ws, request);
       });
     } else {
       // Let Next.js handle HMR upgrades or other upgrades
@@ -219,6 +229,178 @@ app.prepare().then(() => {
         ws.send(`\r\nConnection error: ${err.message}\r\n`);
         ws.close();
     }
+  });
+
+  // Logs WebSocket with simple RPC (pause/resume) and backpressure handling
+  wssLogs.on('connection', async (ws: WebSocket, req) => {
+    const { query, pathname } = parse(req.url!, true);
+    const serviceName = (query.serviceName as string) || '';
+    const instanceId = (query.instanceId as string) || '';
+    const node = (query.node as string) || '';
+
+    const nodeId = node && node !== 'undefined' ? node : undefined;
+    let targetNode: any = undefined;
+
+    // Resolve node if provided
+    try {
+      if (nodeId) {
+        const supabase = createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          {
+            cookies: {
+              getAll() { return []; },
+              setAll() {}
+            }
+          }
+        );
+        const manager = new HostingManager(supabase);
+        const factory = new HostingProviderFactory(manager);
+        const result = await factory.findNode(nodeId);
+        if (result) targetNode = result.node;
+      }
+    } catch (err) {
+      console.error('[LogsWS] Node resolution error:', err);
+    }
+
+    const docker = getDockerInstance(targetNode);
+
+    let containerName = serviceName ? getContainerName(serviceName) : '';
+    if (instanceId) containerName = instanceId || containerName;
+    if (!containerName) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Missing container target' }));
+      ws.close();
+      return;
+    }
+
+    let paused = false;
+    let logStream: any;
+
+    function sendLine(line: string) {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      // Backpressure: if buffer too large, drop this line
+      if ((ws as any).bufferedAmount && (ws as any).bufferedAmount > 1_000_000) return;
+      ws.send(JSON.stringify({ type: 'log', data: line }));
+    }
+
+    try {
+      const container = docker.getContainer(containerName);
+      const info = await container.inspect();
+      if (!info.State.Running) {
+        ws.send(JSON.stringify({ type: 'error', message: `Container ${containerName} is not running` }));
+        ws.close();
+        return;
+      }
+      logStream = await container.logs({ follow: true, stdout: true, stderr: true, tail: 100 });
+      logStream.on('data', (chunk: Buffer) => {
+        if (paused) return;
+        const line = chunk.toString('utf-8').replace(/\r?\n$/, '');
+        sendLine(line);
+      });
+      logStream.on('end', () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'end' }));
+          ws.close();
+        }
+      });
+      logStream.on('error', (err: any) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'error', message: err?.message || 'log stream error' }));
+          ws.close();
+        }
+      });
+    } catch (err: any) {
+      ws.send(JSON.stringify({ type: 'error', message: err?.message || 'failed to open logs' }));
+      ws.close();
+      return;
+    }
+
+    ws.on('message', (msg) => {
+      try {
+        const payload = JSON.parse(msg.toString());
+        if (payload.type === 'pause') paused = true;
+        else if (payload.type === 'resume') paused = false;
+        else if (payload.type === 'tail' && typeof payload.lines === 'number') {
+          // No dynamic tail change for now; placeholder for future RPC.
+        }
+      } catch {
+        // ignore non-JSON control frames
+      }
+    });
+
+    ws.on('close', () => {
+      try { logStream?.destroy?.(); } catch {}
+    });
+  });
+
+  // Services status stream (poll-based, lightweight)
+  wssServices.on('connection', async (ws: WebSocket) => {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return []; }, setAll() {} } }
+    );
+
+    let closed = false;
+    ws.on('close', () => { closed = true; });
+
+    async function emitSnapshot() {
+      try {
+        const { data: services } = await supabase.from('services').select('*').order('name', { ascending: true });
+        const docker = getDockerInstance();
+        const containers = await docker.listContainers({ all: false });
+        const map = new Map(containers.map((c: any) => [c.Names[0].replace('/', ''), c]));
+
+        const payload = (services || []).map((svc: any) => {
+          const instanceCount = svc.instances || 1;
+          let running = 0;
+          const instance_details: any[] = [];
+          for (let i = 0; i < instanceCount; i++) {
+            const name = getContainerName(svc.name, i);
+            const info = map.get(name);
+            const isRunning = !!info;
+            if (isRunning) running++;
+            let ip = 'N/A';
+            if (info?.NetworkSettings?.Networks) {
+              const networks = Object.values(info.NetworkSettings.Networks) as any[];
+              if (networks.length > 0) ip = networks[0].IPAddress;
+            }
+            instance_details.push({
+              id: name,
+              name: `${svc.name} #${i + 1}`,
+              status: isRunning ? 'running' : 'stopped',
+              statusDetail: info?.Status || 'Offline',
+              is_running: isRunning,
+              ip,
+              node: 'Local Node',
+              containerName: name,
+            });
+          }
+          const status = running > 0 ? 'online' : 'offline';
+          const health = running === instanceCount ? 'healthy' : (running > 0 ? 'degraded' : 'offline');
+          return {
+            ...svc,
+            status,
+            health,
+            activeInstances: running,
+            is_online: status === 'online',
+            instance_details,
+          };
+        });
+
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'services', data: payload }));
+        }
+      } catch (err: any) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'error', message: err?.message || 'services stream error' }));
+        }
+      }
+    }
+
+    await emitSnapshot();
+    const timer = setInterval(() => { if (!closed) emitSnapshot(); }, 3000);
+    ws.on('close', () => clearInterval(timer));
   });
 
   server.listen(port, () => {

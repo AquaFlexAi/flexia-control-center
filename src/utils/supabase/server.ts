@@ -1,8 +1,31 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 export async function createClient() {
     const cookieStore = await cookies()
+    let headerStore: Awaited<ReturnType<typeof headers>> | null = null;
+    try {
+        headerStore = await headers()
+    } catch (e) {
+        // Fallback for environments where headers() is not available or fails
+        console.warn('[Supabase] headers() access failed', e);
+    }
+
+    const authHeader = headerStore?.get('authorization')
+    const e2eHeader = headerStore?.get('x-flexia-e2e-token')
+
+    // E2E Test Bypass: Use Service Role Key if header present
+    if (process.env.NODE_ENV === 'development' && e2eHeader === 'flexia-dev-bypass') {
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+            cookies: { getAll() { return [] }, setAll() { } }
+        });
+    }
+
+    const requestHeaders: Record<string, string> = {};
+    if (authHeader) {
+        requestHeaders['Authorization'] = authHeader;
+    }
 
     return createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,18 +35,18 @@ export async function createClient() {
                 getAll() {
                     return cookieStore.getAll()
                 },
-                setAll(cookiesToSet) {
+                setAll(cookiesToSet: any[]) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) =>
                             cookieStore.set(name, value, options)
                         )
                     } catch (error) {
-                        // The `setAll` method was called from a Server Component.
-                        // This can be ignored if you have middleware refreshing
-                        // user sessions.
                     }
                 },
             },
+            global: {
+                headers: requestHeaders
+            }
         }
     )
 }
@@ -34,7 +57,12 @@ export async function getUserRole() {
 
     if (!user) return null;
 
-    // Check organization_members for role
+    // 1. Prefer user_metadata role (fastest, no DB query needed if reliable)
+    if (user.user_metadata?.role) {
+        return user.user_metadata.role;
+    }
+
+    // 2. Fallback to organization_members
     const { data: member, error } = await supabase
         .from('organization_members')
         .select('role')
@@ -43,5 +71,28 @@ export async function getUserRole() {
 
     // console.log(`[RBAC] getUserRole for ${user.email}:`, member?.role, 'Error:', error?.message);
 
-    return member?.role || 'viewer'; // Default to viewer if no role found
+    const role = member?.role;
+    if (!role || role.trim() === '') {
+        return 'viewer';
+    }
+    return role;
+}
+
+export function createAdminClient() {
+    return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            cookies: {
+                getAll() {
+                    return []
+                },
+                setAll(cookiesToSet) {
+                },
+            },
+            global: {
+                headers: {}
+            }
+        }
+    )
 }

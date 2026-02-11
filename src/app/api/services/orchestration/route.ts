@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/server';
 import { getDockerInstance, SERVICE_CONTAINER_MAP, SERVICE_DEFAULTS, createContainer } from '@/lib/docker';
 import { authorize } from '@/utils/supabase/auth-check';
 
@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const { authorized, response, user } = await authorize('manage_services');
     if (!authorized || !user) return response!;
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     const { serviceId, action, instanceId } = await request.json();
 
@@ -32,14 +32,14 @@ export async function POST(request: Request) {
     if (!containerName) {
         containerName = SERVICE_CONTAINER_MAP[service.name];
     }
-    
+
     // If still no container name (and no instanceId provided), we might need to derive it
     if (!containerName) {
         // Fallback: try to guess standard naming convention if map fails
         // This is important for dynamic services not in the static map
         // e.g. "Agent Zero Cluster" -> "agent-zero-cluster-0" (default to first instance)
         const slug = service.name.toLowerCase().replace(/ /g, '-');
-        containerName = `${slug}-0`; 
+        containerName = `${slug}-0`;
     }
 
     if (!containerName) {
@@ -73,14 +73,16 @@ export async function POST(request: Request) {
                     // Container doesn't exist, create it
                     const defaults = SERVICE_DEFAULTS[service.name];
                     if (!defaults) {
-                         throw new Error(`No default configuration found for ${service.name}. Cannot auto-provision.`);
+                        const code = 'DEFAULT_CONFIG_MISSING';
+                        throw Object.assign(new Error(`No default configuration found for ${service.name}. Cannot auto-provision.`), { code });
                     }
 
                     await createContainer({
                         name: containerName,
                         image: defaults.image,
                         ports: defaults.ports,
-                        env: defaults.env
+                        env: defaults.env,
+                        hostIp: service.exposed_ip
                     });
                 } else {
                     throw err;
@@ -112,10 +114,12 @@ export async function POST(request: Request) {
                             name: containerName,
                             image: defaults.image,
                             ports: defaults.ports,
-                            env: defaults.env
+                            env: defaults.env,
+                            hostIp: service.exposed_ip
                         });
                     } else {
-                        throw new Error(`Container missing and no default config for ${service.name}`);
+                        const code = 'DEFAULT_CONFIG_MISSING';
+                        throw Object.assign(new Error(`Container missing and no default config for ${service.name}`), { code });
                     }
                 } else {
                     throw err;
@@ -147,9 +151,10 @@ export async function POST(request: Request) {
             service_id: serviceId,
             level: 'error',
             message: `Failed to execute physical ${action} for ${service.name}.`,
-            details: { error: error.message, container: containerName }
+            details: { error: error.message, code: error.code || 'UNKNOWN', container: containerName }
         });
 
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const status = error.code === 'DEFAULT_CONFIG_MISSING' ? 422 : 500;
+        return NextResponse.json({ error: error.message, code: error.code || 'UNKNOWN' }, { status });
     }
 }

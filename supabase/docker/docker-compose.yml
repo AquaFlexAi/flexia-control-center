@@ -123,6 +123,25 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../../.env.local:/app/.env.local
 
+  usage-ingestion:
+    container_name: flexia-usage-ingestion
+    build:
+      context: ../../
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_started
+      kong:
+        condition: service_started
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: flexia-usage-ingestion
+      NEXT_PUBLIC_SUPABASE_URL: http://kong:8000
+    volumes:
+      - ../../.env.local:/app/.env.local
+    command: [ "npx", "tsx", "src/workers/usage-ingestion.ts" ]
+
 volumes:
   kafka_data:
   db_data:

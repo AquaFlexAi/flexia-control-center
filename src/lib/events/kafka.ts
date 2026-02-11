@@ -11,6 +11,15 @@ const kafka = new Kafka({
     logLevel: logLevel.ERROR, // Reduce noise
 });
 
+export const KAFKA_CONFIG = {
+    sessionTimeout: 30000,
+    heartbeatInterval: 10000,
+    retry: {
+        initialRetryTime: 300,
+        retries: 8
+    }
+};
+
 let producer: Producer | null = null;
 let consumer: Consumer | null = null;
 let admin: Admin | null = null;
@@ -46,7 +55,7 @@ export async function ensureTopic(topic: string, numPartitions: number = 1) {
     try {
         const admin = await getAdmin();
         const topics = await admin.listTopics();
-        
+
         if (!topics.includes(topic)) {
             console.log(`[Kafka] Creating topic: ${topic}`);
             await admin.createTopics({
@@ -78,11 +87,12 @@ export async function publishEvent(topic: string, event: any) {
     }
 }
 
-export async function subscribeToTopic(topic: string, handler: (message: any) => Promise<void>) {
-    const c = await getConsumer('flexia-group'); // Default group
+export async function subscribeToTopic(topic: string, handler: (message: any) => Promise<void>, groupId: string = 'flexia-group') {
+    const c = await getConsumer(groupId);
     await c.subscribe({ topic, fromBeginning: false });
 
     await c.run({
+        ...KAFKA_CONFIG,
         eachMessage: async ({ topic, partition, message }) => {
             const value = message.value?.toString();
             if (value) {

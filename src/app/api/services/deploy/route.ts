@@ -9,6 +9,7 @@ import {
     getContainerName
 } from '@/lib/docker';
 import { authorize } from '@/utils/supabase/auth-check';
+import { verifyImageIntegrity, getImageId } from '@/lib/security';
 
 export async function POST(request: Request) {
     // RBAC Check & Auth
@@ -62,6 +63,24 @@ export async function POST(request: Request) {
         });
 
         // 4. Docker Operations
+
+        // Security Check: Image Integrity (Anti-Fraud)
+        if (process.env.NODE_ENV === 'production' || process.env.ENABLE_IMAGE_VERIFICATION === 'true') {
+            const actualId = getImageId(image);
+            if (actualId) {
+                const { valid, reason } = await verifyImageIntegrity(image, actualId);
+                if (!valid) {
+                    await supabase.from('logs').insert({
+                        service_id: serviceId,
+                        level: 'error',
+                        message: `Fraud Detection: ${reason}`,
+                        details: { image, actualId }
+                    });
+                    return NextResponse.json({ error: reason }, { status: 403 });
+                }
+            }
+        }
+
         // Ensure Image (Pull if Prod, Check Local if Dev)
         await ensureImage(image, targetNode);
 
@@ -69,7 +88,7 @@ export async function POST(request: Request) {
         const deployedInstances = [];
         for (let i = 0; i < instanceCount; i++) {
             const containerName = getContainerName(service.name, i);
-            
+
             // Remove Old
             await removeContainer(containerName, targetNode);
 
@@ -78,7 +97,7 @@ export async function POST(request: Request) {
             // This logic assumes a load balancer is in front or ports are mapped differently per instance.
             // For simplicity in this iteration, we only map ports for the primary instance (index 0) 
             // OR we rely on internal container networking if using a swarm/router.
-            
+
             const instancePorts = i === 0 ? ports : undefined; // Prevent port conflict on host for now
 
             await createContainer({

@@ -13,6 +13,8 @@ import {
     Boxes,
     Palette,
     ClipboardList,
+    Server,
+    BarChart3,
     X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,8 @@ import { usePermission } from "@/hooks/usePermission";
 const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/", permission: 'view_dashboard' },
     { icon: Boxes, label: "Services", href: "/services", permission: 'manage_services' },
+    { icon: Server, label: "Instances", href: "/instances", permission: 'view_dashboard' },
+    { icon: BarChart3, label: "Usage", href: "/usage", permission: 'view_dashboard' },
     { icon: Palette, label: "Branding", href: "/branding", permission: 'view_settings' },
     { icon: ClipboardList, label: "Planning", href: "/planning", permission: 'view_settings' },
     { icon: ShieldCheck, label: "Security", href: "/security", permission: 'view_settings' },
@@ -44,7 +48,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     return (
         <>
             {/* Mobile Overlay */}
-            <div 
+            <div
                 className={cn(
                     "fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300",
                     isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -52,7 +56,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={onClose}
             />
 
-            <aside 
+            <aside
                 className={cn(
                     "w-64 glass-nav h-screen fixed left-0 top-0 z-50 flex flex-col transition-transform duration-300 lg:translate-x-0",
                     isOpen ? "translate-x-0" : "-translate-x-full"
@@ -66,7 +70,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             </div>
                             <span className="text-xl font-bold tracking-tight text-white">FlexIA <span className="text-xs font-light opacity-50 uppercase tracking-[0.2em]">SaaS</span></span>
                         </div>
-                        <button 
+                        <button
                             onClick={onClose}
                             className="lg:hidden p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-white transition-colors"
                         >

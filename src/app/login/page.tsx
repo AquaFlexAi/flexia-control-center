@@ -5,6 +5,11 @@ import { Activity, Shield, Mail, Lock, ArrowRight, Loader2 } from "lucide-react"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import dynamic from 'next/dynamic';
+
+const DevLogin = dynamic(() => import('@/components/auth/DevLogin').then(mod => mod.DevLogin), {
+    ssr: false,
+});
 
 export default function LoginPage() {
     const isDev = process.env.NODE_ENV === 'development';
@@ -139,6 +144,22 @@ export default function LoginPage() {
                     By signing in, you agree to the <Link href="#" className="underline">Terms of Service</Link>
                 </p>
             </div>
+
+            {/* Dev Login Helper (Only in Development) */}
+            {isDev && (
+                <div
+                    title="Development Login Helper"
+                    className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5 fade-in duration-500"
+                >
+                    <DevLogin
+                        onSelectUser={(userEmail) => {
+                            setEmail(userEmail);
+                            setPassword('password123');
+                        }}
+                    />
+                </div>
+            )}
         </div>
     );
 }
+

@@ -1,0 +1,16 @@
+{
+    "name": "flexia-secure-docker-proxy",
+    "version": "1.0.0",
+    "description": "Secure TLS proxy for Docker with event streaming",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "generate-certs": "bash generate-certs.sh"
+    },
+    "dependencies": {
+        "dockerode": "^3.3.5",
+        "http-proxy": "^1.18.1",
+        "kafkajs": "^2.2.4",
+        "dotenv": "^16.4.5"
+    }
+}

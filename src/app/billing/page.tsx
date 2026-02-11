@@ -1,212 +1,129 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import {
-    CreditCard,
-    Zap,
-    History,
-    ArrowUpRight,
-    Download,
-    Check,
-    BadgePercent,
-    TrendingUp,
-    Wallet,
-    Loader2,
-    Shield
-} from "lucide-react";
-import { usePermission } from "@/hooks/usePermission";
+import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
+import { useWallet } from '@/hooks/useWallet';
+
+// Atomic Components
+import { BillingStats } from '@/components/billing/BillingStats';
+import { PlansSection } from '@/components/billing/PlansSection';
+import { StakingDashboard } from '@/components/billing/StakingDashboard';
+import { StakingForm } from '@/components/billing/StakingForm';
+import { SubscriptionData } from '@/components/billing/constants';
+
+// --- Main Page Component ---
 
 export default function BillingPage() {
-    const [billingData, setBillingData] = useState<any>(null);
+    const { connect } = useWallet();
     const [loading, setLoading] = useState(true);
-    const { can, loading: roleLoading } = usePermission();
+    const [sub, setSub] = useState<SubscriptionData | null>(null);
+    const [activeTab, setActiveTab] = useState<'overview' | 'staking'>('overview');
 
     useEffect(() => {
-        async function fetchBilling() {
-            try {
-                const resp = await fetch('/api/billing');
-                if (resp.ok) {
-                    const data = await resp.json();
-                    setBillingData(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch billing data", err);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchBilling();
+        loadData();
     }, []);
 
-    if (loading || roleLoading) {
-        return (
-            <div className="h-[60vh] flex items-center justify-center">
-                <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
-            </div>
-        );
-    }
+    const loadData = async () => {
+        try {
+            const res = await fetch('/api/billing/status');
+            if (res.ok) {
+                const data = await res.json();
+                setSub(data);
+            } else {
+                console.error('Failed to fetch billing status:', res.statusText);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const { credits, transactions } = billingData || { credits: { balance: 0, tier: 'starter' }, transactions: [] };
+    const handleUpgrade = async (tier: string) => {
+        try {
+            const res = await fetch('/api/billing/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tier }),
+            });
+            const { url } = await res.json();
+            if (url) window.location.href = url;
+        } catch (err) {
+            alert('Failed to start checkout');
+        }
+    };
 
-    return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
-            <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Billing & Credits</h1>
-                <p className="text-muted-foreground">Manage your subscription, credits, and view transaction history.</p>
-            </div>
-
-            {/* Credit Balance Card */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 glass-card accent-gradient text-white !border-none flex flex-col justify-between min-h-[240px] relative overflow-hidden group">
-                    <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700" />
-                    <div className="relative z-10">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Available Credits</p>
-                                <h2 className="text-5xl font-extrabold tracking-tighter italic">{credits.balance.toLocaleString()} <span className="text-xl font-normal not-italic opacity-60 ml-1">FLX</span></h2>
-                            </div>
-                            <Wallet className="w-10 h-10 opacity-40" />
-                        </div>
-                        <p className="mt-6 text-sm opacity-90 max-w-sm">
-                            Your credits are shared across all FlexIA services. Estimated to last {Math.floor(credits.balance / 1000)} days based on your current usage.
-                        </p>
-                    </div>
-                    <div className="relative z-10 flex gap-4 mt-8">
-                        <button className="bg-white text-purple-600 px-6 py-3 rounded-xl font-bold text-sm shadow-xl hover:bg-opacity-90 transition-all">
-                            Top Up Credits
-                        </button>
-                        <button className="bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-xl font-bold text-sm border border-white/20 hover:bg-white/30 transition-all">
-                            View Usage Report
-                        </button>
-                    </div>
-                </div>
-
-                <div className="glass-card flex flex-col justify-between">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-bold text-white flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-emerald-400" /> Daily Spend
-                        </h3>
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Last 7 Days</span>
-                    </div>
-                    <div className="flex-1 flex items-end gap-2 px-2 h-32">
-                        {[40, 70, 45, 90, 65, 80, 55].map((h, i) => (
-                            <div key={i} className="flex-1 bg-white/5 rounded-t-lg group relative overflow-hidden">
-                                <div
-                                    className="absolute bottom-0 left-0 right-0 accent-gradient transition-all duration-700 group-hover:opacity-80"
-                                    style={{ height: `${h}%` }}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-6 pt-6 border-t border-white/5 flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Status: <span className="text-white font-bold uppercase tracking-widest text-[10px]">{credits.tier}</span></span>
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                            <BadgePercent className="w-4 h-4" /> -12% avg
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Subscription Plans */}
-            <div className="space-y-6">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-400" /> Subscription Plan
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[
-                        { name: "Starter", price: "$0", id: "starter", features: ["1 Agent", "Basic Router", "Community Support"] },
-                        { name: "Professional", price: "$49", id: "professional", features: ["10 Agents", "Advanced Router", "Priority Logic", "Slack Support"] },
-                        { name: "Enterprise", price: "Custom", id: "enterprise", features: ["Unlimited Agents", "Custom LLM Hosting", "Dedicated Manager", "99.99% SLA"] },
-                    ].map((plan, i) => (
-                        <div key={i} className={cn(
-                            "glass-card border-2 flex flex-col gap-6 relative overflow-hidden transition-all duration-500",
-                            credits.tier === plan.id ? "border-purple-500/50 shadow-purple-500/10 shadow-2xl scale-[1.02]" : "border-white/5 hover:border-white/10"
-                        )}>
-                            {credits.tier === plan.id && (
-                                <div className="absolute top-0 right-0 bg-purple-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
-                                    Current Plan
-                                </div>
-                            )}
-                            <div>
-                                <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-                                <div className="mt-2 flex items-baseline gap-1">
-                                    <span className="text-3xl font-black text-white">{plan.price}</span>
-                                    <span className="text-sm text-muted-foreground">/month</span>
-                                </div>
-                            </div>
-                            <ul className="space-y-4 flex-1">
-                                {plan.features.map((f, j) => (
-                                    <li key={j} className="flex items-center gap-3 text-sm text-muted-foreground">
-                                        <div className="w-5 h-5 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                                            <Check className="w-3 h-3 text-purple-400" />
-                                        </div>
-                                        {f}
-                                    </li>
-                                ))}
-                            </ul>
-                            <button className={cn(
-                                "w-full py-3 rounded-xl font-bold text-sm transition-all duration-300",
-                                credits.tier === plan.id
-                                    ? "bg-white/10 text-white cursor-default"
-                                    : "glass hover:bg-white/10 text-white"
-                            )}>
-                                {credits.tier === plan.id ? "Installed" : "Upgrade Plan"}
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Transaction History */}
-            <div className="space-y-6">
-                <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <History className="w-5 h-5 text-blue-400" /> Recent Transactions
-                    </h2>
-                    <button className="text-xs font-bold text-purple-400 flex items-center gap-1 hover:text-purple-300 transition-colors">
-                        View All <ArrowUpRight className="w-3 h-3" />
-                    </button>
-                </div>
-                <div className="glass-card !p-0 overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 border-b border-white/5 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
-                                <th className="px-6 py-4">Transaction ID</th>
-                                <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4">Description</th>
-                                <th className="px-6 py-4">Amount</th>
-                                <th className="px-6 py-4 text-right">Invoice</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {transactions.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground text-sm font-medium">No recent transactions.</td>
-                                </tr>
-                            ) : transactions.map((txn: any, i: number) => (
-                                <tr key={i} className="hover:bg-white/5 transition-colors group">
-                                    <td className="px-6 py-4 font-mono text-[10px] text-muted-foreground group-hover:text-white transition-colors uppercase">{txn.id.slice(0, 8)}</td>
-                                    <td className="px-6 py-4 text-sm text-muted-foreground">{new Date(txn.created_at).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4 text-sm font-medium text-white">{txn.description}</td>
-                                    <td className={cn("px-6 py-4 text-sm font-bold", txn.type === 'topup' ? "text-emerald-400" : "text-white")}>
-                                        {txn.type === 'topup' ? '+' : '-'}${Math.abs(txn.amount).toFixed(2)}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button className="p-2 glass rounded-lg hover:bg-white/10 transition-all text-purple-400">
-                                            <Download className="w-4 h-4" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    if (loading) return (
+        <div className="flex h-screen items-center justify-center bg-[#0B0E14]">
+            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
         </div>
     );
-}
 
-// Minimal Helper for layout
-function cn(...inputs: any[]) {
-    return inputs.filter(Boolean).join(" ");
+    return (
+        <div className="min-h-screen bg-[#0B0E14] text-slate-200 font-sans selection:bg-indigo-500/30">
+            {/* Header */}
+            <header className="border-b border-slate-800/50 bg-[#0B0E14]/80 backdrop-blur-md sticky top-0 z-10 px-8 py-4">
+                <div className="max-w-7xl mx-auto flex justify-between items-center">
+                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                        Billing & Staking
+                    </h1>
+                    <div className="flex gap-2">
+                        {['overview', 'staking'].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab as any)}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all
+                                    ${activeTab === tab
+                                        ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20'
+                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+                            >
+                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </header>
+
+            <main className="max-w-7xl mx-auto px-8 py-12">
+                <AnimatePresence mode="wait">
+                    {activeTab === 'overview' ? (
+                        <motion.div
+                            key="overview"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className="space-y-12"
+                        >
+                            <BillingStats
+                                sub={sub}
+                                onViewStaking={() => setActiveTab('staking')}
+                            />
+
+                            <PlansSection
+                                currentTier={sub?.tier || 'free'}
+                                onUpgrade={handleUpgrade}
+                            />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="staking"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                        >
+                            {/* Left Column: Dashboard */}
+                            <StakingDashboard sub={sub} />
+
+                            {/* Right Column: Stake Form */}
+                            <div>
+                                <StakingForm onStakeComplete={loadData} />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </main>
+        </div>
+    );
 }

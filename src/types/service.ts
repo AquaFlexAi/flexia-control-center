@@ -28,6 +28,9 @@ export interface Service {
     latency?: string;
     instance_details?: ServiceInstance[];
     instanceDetails?: ServiceInstance[]; // legacy/camelCase support
+    is_archived?: boolean;
+    has_blockchain_data?: boolean;
+    exposed_ip?: string;
 }
 
 export type ServiceAction = 'start' | 'stop' | 'restart';

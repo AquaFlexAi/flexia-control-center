@@ -14,14 +14,12 @@ if (!supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const users = [
-    { name: 'System Admin',    email: 'admin@flexia.io',   role: 'system_admin', password: 'password123' },
-    { name: 'Alice System',    email: 'alice@flexia.io',   role: 'system_admin', password: 'password123' },
-    { name: 'Bob Manager',     email: 'bob@flexia.io',     role: 'manager',      password: 'password123' },
-    { name: 'Charlie Analyst', email: 'charlie@flexia.io', role: 'analyst',      password: 'password123' },
-    { name: 'David Owner',     email: 'david@flexia.io',   role: 'owner',        password: 'password123' },
-    { name: 'Eve Viewer',      email: 'eve@flexia.io',     role: 'viewer',       password: 'password123' },
-    { name: 'Frank Admin',     email: 'frank@flexia.io',   role: 'admin',        password: 'password123' },
-    { name: 'Grace Developer', email: 'grace@flexia.io',   role: 'developer',    password: 'password123' }
+    { name: 'System Admin', email: 'admin@flexia.io', role: 'system_admin', password: 'password123' },
+    // Real User (Owner)
+    { name: 'FlexIA Owner', email: 'test@flexia.ai', role: 'owner', password: 'password123' },
+    // Essential Test Accounts for E2E
+    { name: 'Test Owner', email: 'test-owner@flexai.test', role: 'owner', password: 'password123' },
+    { name: 'Test Admin', email: 'test-admin@flexai.test', role: 'admin', password: 'password123' }
 ];
 
 async function seedUsers() {
@@ -30,7 +28,7 @@ async function seedUsers() {
 
     // Fetch existing users to check for existence
     const { data: { users: existingUsers }, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    
+
     if (listError) {
         console.error('❌ Error listing users:', listError);
         return;
@@ -103,7 +101,7 @@ async function seedUsers() {
             console.error(`   ❌ Unexpected error for ${user.email}:`, err);
         }
     }
-    
+
     console.log('✅ Seeding complete.');
 }
 

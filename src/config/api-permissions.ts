@@ -12,7 +12,7 @@ export const API_ROUTE_CONFIG: Record<string, {
     },
     '/api/telemetry': {
         GET: 'view_realtime_metrics',
-        POST: 'manage_services' 
+        POST: 'manage_services'
     },
     '/api/services': {
         GET: 'view_services',
@@ -20,6 +20,15 @@ export const API_ROUTE_CONFIG: Record<string, {
         DELETE: 'delete_services'
     },
     '/api/services/terminal': {
+        POST: 'manage_services'
+    },
+    '/api/analytics/instances': {
+        GET: 'view_analytics'
+    },
+    '/api/services/health-check': {
+        POST: 'view_services'
+    },
+    '/api/console/exec': {
         POST: 'manage_services'
     }
 };

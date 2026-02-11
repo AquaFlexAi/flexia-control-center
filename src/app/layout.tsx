@@ -21,6 +21,12 @@ export default async function RootLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (user) {
+    console.log(`[RootLayout] Authenticated User: ${user.email}`);
+  } else {
+    console.log('[RootLayout] No user found - hiding navigation');
+  }
+
   // Hide navigation elements for unauthenticated users (login page)
   const isAuthPage = !user;
 

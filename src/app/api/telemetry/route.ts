@@ -11,6 +11,38 @@ export async function GET(request: Request) {
     const serviceId = searchParams.get('serviceId');
     const supabase = await createClient();
 
+    // Guard: if service is offline (no running containers), do not generate fallback telemetry
+    if (serviceId) {
+        const { data: serviceRow } = await supabase
+            .from('services')
+            .select('name, instances')
+            .eq('id', serviceId)
+            .single();
+
+        if (!serviceRow) {
+             return NextResponse.json({ serviceId, history: [] });
+        }
+
+        if (serviceRow) {
+            const { listContainers, getContainerName } = await import('@/lib/docker');
+            const runningContainers = await listContainers();
+            const containerSet = new Set(runningContainers.map((c: any) => c.Names[0].replace('/', '')));
+            let runningCount = 0;
+            // Use nullish coalescing to allow 0 instances
+            const targetInstances = serviceRow.instances ?? 1;
+            
+            for (let i = 0; i < targetInstances; i++) {
+                const expectedName = getContainerName(serviceRow.name, i);
+                if (containerSet.has(expectedName)) runningCount++;
+            }
+            
+            // If supposed to be running but no containers found, return empty
+            if (runningCount === 0) {
+                return NextResponse.json({ serviceId, history: [] });
+            }
+        }
+    }
+
     // Try to fetch real metrics from the last 20 minutes
     const { data, error } = await supabase
         .from('telemetry')
@@ -26,7 +58,8 @@ export async function GET(request: Request) {
         });
     }
 
-    // Fallback to generator if no real data yet
+    // Fallback to generator if no real data yet (service must be online to reach here)
+    /* 
     const generateData = () => {
         const data = [];
         const now = Date.now();
@@ -39,10 +72,11 @@ export async function GET(request: Request) {
         }
         return data;
     };
+    */
 
     return NextResponse.json({
         serviceId,
-        history: generateData()
+        history: [] // Return empty if no real data found, instead of fake data
     });
 }
 

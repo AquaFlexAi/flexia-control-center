@@ -119,7 +119,7 @@ export class HetznerProvider implements HostingProvider {
 
     async provisionNode(config: HetznerNodeConfig): Promise<ComputeNode> {
         console.log(`[Hetzner] Provisioning node ${config.name} in ${config.location}...`);
-        
+
         // POST /servers
         const payload = {
             name: config.name,
@@ -139,11 +139,11 @@ export class HetznerProvider implements HostingProvider {
         });
 
         const server = data.server;
-        
+
         // If we have root password (returned only on creation if no SSH key), we should store it securely
         // But ComputeNode interface doesn't strictly support returning secrets this way yet.
         // For now, we assume SSH keys are used.
-        
+
         return this.mapServerToNode(server);
     }
 
@@ -213,6 +213,32 @@ export class HetznerProvider implements HostingProvider {
                 ramGb: server.server_type?.memory,
                 diskGb: server.server_type?.disk,
             },
+            tags: Object.keys(server.labels || {}),
         };
+    }
+
+    async getRegions(): Promise<{ id: string; name: string }[]> {
+        return HETZNER_LOCATIONS.map(id => ({
+            id,
+            name: id.toUpperCase()
+        }));
+    }
+
+    async getInstanceTypes(): Promise<{ id: string; name: string; cpu: number; ram: number; price: number }[]> {
+        // Mocking details for now since we only have type names in the constant
+        return HETZNER_SERVER_TYPES.map(id => {
+            const isCpx = id.startsWith('cpx') || id.startsWith('ccx');
+            const num = parseInt(id.replace(/\D/g, '')) || 11;
+            const cpu = Math.floor(num / 10) + (isCpx ? 1 : 0);
+            const ram = Math.floor(num / 10) * 2;
+
+            return {
+                id,
+                name: id.toUpperCase(),
+                cpu,
+                ram,
+                price: (cpu * 0.005) + (ram * 0.002) // Rough mock price
+            };
+        });
     }
 }

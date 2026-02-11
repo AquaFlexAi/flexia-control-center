@@ -4,64 +4,90 @@ import { NextResponse } from "next/server";
 
 export async function authorize(permission: Permission): Promise<{ authorized: boolean; response?: NextResponse; user?: any; role?: Role }> {
     const supabase = await createClient();
-    
+
+    // E2E Test Bypass (Development Only)
+    // Allows tests to simulate an admin user without real Supabase session
+    if (process.env.NODE_ENV === 'development') {
+        const { headers } = await import("next/headers");
+        const headersList = await headers();
+        const bypassToken = headersList.get('x-flexia-e2e-token');
+
+        if (bypassToken === 'flexia-dev-bypass') {
+            return {
+                authorized: true,
+                user: { id: 'e2e-test-user', email: 'test@flexia.ai' },
+                role: 'system_admin' as Role
+            };
+        }
+    }
+
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
-        return { 
-            authorized: false, 
-            response: NextResponse.json({ error: 'Unauthorized: Please login first' }, { status: 401 }) 
+        return {
+            authorized: false,
+            response: NextResponse.json({ error: 'Unauthorized: Please login first' }, { status: 401 })
         };
     }
 
     // 1. Try to get role from metadata first (Performance)
     let role = user.user_metadata?.role as Role;
-    
+
     // 2. If not in metadata, fetch from DB (Reliability/Security)
     if (!role) {
-         console.log(`[RBAC] Fetching role for user: ${user.email}`);
-         const { data: member, error: memberError } = await supabase
+        const { createAdminClient } = await import("@/utils/supabase/server");
+        const supabaseAdmin = await createAdminClient();
+
+        const { data: member, error: memberError } = await supabaseAdmin
             .from('organization_members')
             .select('role')
             .eq('email', user.email)
             .single();
-         
-         if (memberError) {
-             console.error(`[RBAC] Error fetching member:`, memberError);
-         }
-         
-         if (member) {
-             console.log(`[RBAC] Found role: ${member.role}`);
-             role = member.role as Role;
-         } else {
-             console.warn(`[RBAC] No member found for email: ${user.email}`);
-         }
+
+        if (memberError) {
+            // Error fetching member, role remains undefined
+        }
+
+        if (member) {
+            role = member.role as Role;
+        }
     }
 
     // 3. If still no role, they are not a member
     if (!role) {
-         console.warn(`[RBAC] Access denied: No role for ${user.email}`);
-         return { 
-            authorized: false, 
-            response: NextResponse.json({ error: 'Forbidden: No role assigned to this user' }, { status: 403 }) 
+        return {
+            authorized: false,
+            response: NextResponse.json({ error: `Forbidden: No role assigned to this user (${user.email})` }, { status: 403 })
         };
     }
 
-    // 4. Check Permissions (Dynamic DB Check)
-    console.log(`[RBAC] Checking permission '${permission}' for role '${role}'`);
-    const { data: permData, error: permError } = await supabase
-        .from('role_permissions')
-        .select('permission_key')
-        .eq('role_key', role)
-        .eq('permission_key', permission)
-        .single();
+    // 4. Check Permissions (Internal Query - Use Service Role)
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js');
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (permError || !permData) {
+    if (!serviceKey) {
+        console.error('[RBAC] CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing in auth-check.ts');
+    }
+
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceKey!
+    );
+
+    const { data: permData, error: permError, count } = await supabaseAdmin
+        .from('role_permissions')
+        .select('permission_key', { count: 'exact' })
+        .eq('role_key', role)
+        .eq('permission_key', permission);
+
+    const hasPermission = permData && permData.length > 0;
+
+    if (!hasPermission) {
         console.warn(`[RBAC] Permission denied: ${role} lacks ${permission}`);
-        return { 
-            authorized: false, 
-            response: NextResponse.json({ 
-                error: `Forbidden: You need '${permission}' permission to perform this action. (Role: ${role})` 
-            }, { status: 403 }) 
+        return {
+            authorized: false,
+            response: NextResponse.json({
+                error: `Forbidden: You need '${permission}' permission to perform this action. (Role: ${role})`
+            }, { status: 403 })
         };
     }
 
