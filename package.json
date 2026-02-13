@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "bun server.ts",
     "dev:next": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "node scripts/seed_users.js",
-    "seed:rbac": "tsx scripts/seed_rbac.ts",
+    "seed": "bun scripts/seed_users.js",
+    "seed:rbac": "bun scripts/seed_rbac.ts",
     "devtools": "react-devtools",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -17,9 +17,15 @@
     "test:rbac": "vitest run tests/api/rbac-matrix.test.ts",
     "test:auth": "vitest run tests/api/auth.test.ts",
     "test:e2e": "vitest run tests/api/",
-    "seed:test": "npx -y cross-env NODE_ENV=test tsx scripts/reset-and-seed.ts"
+    "seed:test": "bun run scripts/reset-and-seed.ts"
   },
   "dependencies": {
+    "@opentelemetry/exporter-trace-otlp-http": "^0.212.0",
+    "@opentelemetry/resources": "^2.5.1",
+    "@opentelemetry/sdk-node": "^0.212.0",
+    "@opentelemetry/sdk-trace-base": "^2.5.1",
+    "@opentelemetry/semantic-conventions": "^1.39.0",
+    "@radix-ui/react-slot": "^1.2.4",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@types/dockerode": "^4.0.1",

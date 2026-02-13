@@ -1,0 +1,7 @@
+Server running in: C:\Users\mrcha\OneDrive\Desktop\APP_DEV\FlexAi\flexia-control-center
+○ Compiling /instrumentation ...
+[Observability] Tracing disabled (no endpoint configured)
+> Ready on http://localhost:8043 [Custom Server with WebSocket]
+○ Compiling /login ...
+[RootLayout] No user found - hiding navigation
+ GET /login 200 in 21.1s (compile: 19.9s, proxy.ts: 52ms, render: 1091ms)

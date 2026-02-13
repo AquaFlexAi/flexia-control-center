@@ -1,8 +1,7 @@
-// import { createClient } from '@/utils/supabase/server';
 import { ethers } from 'ethers';
+import { getConfigValue } from '@/lib/vault';
 
 // Environment Configuration
-const ORACLE_WALLET_PRIVATE_KEY = process.env.ORACLE_WALLET_PRIVATE_KEY!;
 const BLOCKCHAIN_RPC_URL = process.env.BLOCKCHAIN_RPC_URL || 'http://localhost:8545';
 const TOKEN_CONTRACT_ADDRESS = process.env.TOKEN_CONTRACT_ADDRESS!;
 const REWARD_RATE = parseFloat(process.env.REWARD_RATE || '1'); // FLX per 1000 tokens
@@ -12,6 +11,13 @@ const TOKEN_ABI = [
     'function bulkMint(address[] calldata recipients, uint256[] calldata amounts) public',
     'function mint(address to, uint256 amount) public'
 ];
+
+/**
+ * Fetch Oracle Private Key with Vault Fallback
+ */
+async function getOraclePrivateKey(): Promise<string> {
+    return getConfigValue('wallets', 'deployer', process.env.ORACLE_WALLET_PRIVATE_KEY || '');
+}
 
 interface MinerUsage {
     instance_id: string;
@@ -119,16 +125,14 @@ export function calculateRewards(totalTokens: number): bigint {
  * Mint rewards to miners
  */
 export async function mintRewards(rewards: { address: string; amount: bigint }[]): Promise<string> {
-    if (!ORACLE_WALLET_PRIVATE_KEY) {
-        throw new Error('ORACLE_WALLET_PRIVATE_KEY not configured');
-    }
+    const privateKey = await getOraclePrivateKey();
 
     if (!TOKEN_CONTRACT_ADDRESS) {
         throw new Error('TOKEN_CONTRACT_ADDRESS not configured');
     }
 
     const provider = new ethers.JsonRpcProvider(BLOCKCHAIN_RPC_URL);
-    const wallet = new ethers.Wallet(ORACLE_WALLET_PRIVATE_KEY, provider);
+    const wallet = new ethers.Wallet(privateKey, provider);
     const contract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, TOKEN_ABI, wallet);
 
     const addresses = rewards.map(r => r.address);

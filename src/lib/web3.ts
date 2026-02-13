@@ -36,7 +36,7 @@ export function getRegistrationMessage(machineId: string, timestamp: number): st
  */
 export function getJsonRpcProvider() {
     // In production, this would be an Alchemy/Infura URL or internal node
-    const url = process.env.JSON_RPC_URL || 'http://localhost:8545';
+    const url = process.env.JSON_RPC_URL || process.env.BLOCKCHAIN_RPC_URL || 'http://localhost:8545';
     return new ethers.JsonRpcProvider(url);
 }
 

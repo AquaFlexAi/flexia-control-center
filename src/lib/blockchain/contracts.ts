@@ -3,7 +3,7 @@ import deployments from './deployments.json';
 
 // Minimal ABIs for what we need
 const MINER_REGISTRY_ABI = [
-    "function registerMiner(string memory _machineId) public payable",
+    "function registerMiner(string memory _machineId, bytes32 _networkKey, string memory _multiaddr) public payable",
     "function isMiner(address _wallet) public view returns (bool)",
     "function miners(address) view returns (string machineId, uint256 reputation, uint256 stakedAmount, bool isRegistered, uint256 registeredAt)"
 ];

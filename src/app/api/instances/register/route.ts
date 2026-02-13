@@ -1,26 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/utils/supabase/server';
 import crypto from 'node:crypto';
 
 // Initialize Admin Client
-// Note: This relies on SUPABASE_SERVICE_ROLE_KEY being available in the environment
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    }
-);
+const supabaseAdmin = createAdminClient();
 
 import { verifySignature, getRegistrationMessage } from '@/lib/web3';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { inviteToken, name, provider, region, version, config, signature, walletAddress, timestamp } = body;
+        const { inviteToken, name, provider, region, version, config, signature, walletAddress, timestamp, serviceId } = body;
 
         let isAuthenticated = false;
         let authMethod = 'unknown';
@@ -62,6 +52,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Authentication required (Invite Token or Wallet Signature)' }, { status: 401 });
         }
 
+        // 1.5 Lookup Owner (if wallet auth)
+        let ownerId = null;
+        if (authMethod === 'wallet' && config.ownerWallet) {
+            const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+            const owner = users.find(u => u.user_metadata?.wallet_address?.toLowerCase() === config.ownerWallet.toLowerCase());
+            if (owner) ownerId = owner.id;
+
+            // FALLBACK FOR DEV BOOTSTRAP:
+            if (!ownerId && process.env.NODE_ENV !== 'production') {
+                const admin = users.find(u => u.email === 'test@flexia.ai');
+                if (admin) ownerId = admin.id;
+            }
+        }
+
         // 2. Generate Credentials
         const instanceId = crypto.randomUUID();
         // Generate a secure random key
@@ -77,23 +81,37 @@ export async function POST(request: Request) {
             .update(apiKey) // Hash the full key
             .digest('hex');
 
+        // Debug Log
+        console.log(`[Register] Attempting insert for ${instanceId}. Owner: ${ownerId}, Region: ${region}`);
+
         // 4. Register Instance
         const { error: instError } = await supabaseAdmin
             .from('deployed_instances')
             .insert({
                 id: instanceId,
                 name: name || `Instance-${instanceId.slice(0, 8)}`,
+                service_id: serviceId, // Link to parent service
                 provider: provider || 'unknown',
                 region: region,
                 version: version,
                 config: config || {},
                 status: 'active',
-                last_heartbeat_at: new Date().toISOString()
+                last_heartbeat_at: new Date().toISOString(),
+                owner_id: ownerId
             });
 
         if (instError) {
-            console.error('Registration Error (Instance):', instError);
-            return NextResponse.json({ error: 'Failed to register instance record' }, { status: 500 });
+            console.error('Registration Error (Instance) Full:', JSON.stringify(instError, null, 2));
+            console.error('Registration Error (Instance) Message:', instError.message);
+            console.error('Registration Error (Instance) Code:', instError.code);
+            console.error('Registration Error (Instance) Hint:', instError.hint);
+
+            return NextResponse.json({
+                error: 'Failed to register instance record',
+                // Return the whole object to see what's inside
+                fullError: instError,
+                message: instError.message || 'Unknown DB Error'
+            }, { status: 500 });
         }
 
         // 5. Save API Key Hash

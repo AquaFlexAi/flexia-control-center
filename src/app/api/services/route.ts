@@ -5,8 +5,14 @@ import { authorize } from "@/utils/supabase/auth-check";
 import { API_ROUTE_CONFIG } from "@/config/api-permissions";
 
 export async function GET(request: Request) {
-    const { authorized, response, user } = await authorize(API_ROUTE_CONFIG['/api/services'].GET!);
+    const { authorized, response, user, role } = await authorize(API_ROUTE_CONFIG['/api/services'].GET!);
     if (!authorized) return response!;
+
+    // RBAC: Core services must be loaded only for owner role
+    // system_admin also traditionally gets all permissions
+    if (role !== 'owner' && role !== 'system_admin') {
+        return NextResponse.json([]);
+    }
 
     const { createAdminClient } = await import("@/utils/supabase/server");
     const supabaseAdmin = await createAdminClient();
@@ -46,7 +52,7 @@ export async function GET(request: Request) {
     const containerMap = new Map(runningContainers.map((c: any) => [c.Names[0].replace('/', ''), c]));
 
     // 3. Map to frontend expected format with SYNCED status
-    // Also check for blockchain data existence (to show ARCHIVE vs DELETE in UI)
+    // Fixed: deployed_instances now has service_id and total_flx_earned
     const { data: miningInstances } = await supabaseAdmin
         .from('deployed_instances')
         .select('service_id, total_flx_earned, config');

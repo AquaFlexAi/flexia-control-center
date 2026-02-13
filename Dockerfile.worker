@@ -1,10 +1,10 @@
-FROM node:20-alpine
+FROM oven/bun:1-alpine
 
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install
+RUN bun install
 
 # Copy source code
 COPY . .
@@ -14,4 +14,4 @@ COPY . .
 
 # Run the worker
 # tsx automatically uses tsconfig.json for paths
-CMD ["npx", "tsx", "src/workers/health-monitor.ts"]
+CMD ["bun", "run", "src/workers/health-monitor.ts"]
