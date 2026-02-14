@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server';
-import { getDockerInstance, SERVICE_CONTAINER_MAP, SERVICE_DEFAULTS, createContainer } from '@/lib/docker';
+import { getDockerInstance, SERVICE_CONTAINER_MAP, SERVICE_DEFAULTS, createContainer, inspectContainerState, startContainer, stopContainer, restartContainer } from '@/lib/docker';
 import { authorize } from '@/utils/supabase/auth-check';
 
 export async function POST(request: Request) {
@@ -59,24 +59,40 @@ export async function POST(request: Request) {
         if (updateError) throw updateError;
 
         // 3. Perform Docker Action (Async)
-        const docker = getDockerInstance();
-        const container = docker.getContainer(containerName);
+        // 3. Perform Docker Action (Async)
+        // const docker = getDockerInstance();
+        // const container = docker.getContainer(containerName);
 
         if (action === 'start') {
-            try {
-                const info = await container.inspect();
-                if (!info.State.Running) {
-                    await container.start();
+            const state = await inspectContainerState(containerName);
+            if (state.Missing) {
+                // Container doesn't exist, create it
+                const defaults = SERVICE_DEFAULTS[service.name];
+                if (!defaults) {
+                    const code = 'DEFAULT_CONFIG_MISSING';
+                    throw Object.assign(new Error(`No default configuration found for ${service.name}. Cannot auto-provision.`), { code });
                 }
-            } catch (err: any) {
-                if (err.statusCode === 404) {
-                    // Container doesn't exist, create it
-                    const defaults = SERVICE_DEFAULTS[service.name];
-                    if (!defaults) {
-                        const code = 'DEFAULT_CONFIG_MISSING';
-                        throw Object.assign(new Error(`No default configuration found for ${service.name}. Cannot auto-provision.`), { code });
-                    }
 
+                await createContainer({
+                    name: containerName,
+                    image: defaults.image,
+                    ports: defaults.ports,
+                    env: defaults.env,
+                    hostIp: service.exposed_ip
+                });
+            } else if (!state.Running) {
+                await startContainer(containerName);
+            }
+            await supabase.from('services').update({ status: 'online', pending_action: null }).eq('id', serviceId);
+        } else if (action === 'stop') {
+            await stopContainer(containerName);
+            await supabase.from('services').update({ status: 'offline', pending_action: null }).eq('id', serviceId);
+        } else if (action === 'restart') {
+            const state = await inspectContainerState(containerName);
+            if (state.Missing) {
+                // If missing, treat restart as start/create
+                const defaults = SERVICE_DEFAULTS[service.name];
+                if (defaults) {
                     await createContainer({
                         name: containerName,
                         image: defaults.image,
@@ -85,45 +101,11 @@ export async function POST(request: Request) {
                         hostIp: service.exposed_ip
                     });
                 } else {
-                    throw err;
+                    const code = 'DEFAULT_CONFIG_MISSING';
+                    throw Object.assign(new Error(`Container missing and no default config for ${service.name}`), { code });
                 }
-            }
-            await supabase.from('services').update({ status: 'online', pending_action: null }).eq('id', serviceId);
-        } else if (action === 'stop') {
-            try {
-                await container.stop();
-            } catch (err: any) {
-                if (err.statusCode === 304) {
-                    // Already stopped, ignore
-                } else if (err.statusCode === 404) {
-                    // Container missing, effectively stopped
-                } else {
-                    throw err;
-                }
-            }
-            await supabase.from('services').update({ status: 'offline', pending_action: null }).eq('id', serviceId);
-        } else if (action === 'restart') {
-            try {
-                await container.restart();
-            } catch (err: any) {
-                if (err.statusCode === 404) {
-                    // If missing, treat restart as start
-                    const defaults = SERVICE_DEFAULTS[service.name];
-                    if (defaults) {
-                        await createContainer({
-                            name: containerName,
-                            image: defaults.image,
-                            ports: defaults.ports,
-                            env: defaults.env,
-                            hostIp: service.exposed_ip
-                        });
-                    } else {
-                        const code = 'DEFAULT_CONFIG_MISSING';
-                        throw Object.assign(new Error(`Container missing and no default config for ${service.name}`), { code });
-                    }
-                } else {
-                    throw err;
-                }
+            } else {
+                await restartContainer(containerName);
             }
             await supabase.from('services').update({ status: 'online', pending_action: null }).eq('id', serviceId);
         }
@@ -132,7 +114,7 @@ export async function POST(request: Request) {
         await supabase.from('logs').insert({
             service_id: serviceId,
             level: 'info',
-            message: `Physical service action '${action}' completed successfully via Dockerode.`,
+            message: `Physical service action '${action}' completed successfully via Docker (Robust CLI Fallback).`,
             details: { container: containerName, action, timestamp: new Date().toISOString() }
         });
 

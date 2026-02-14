@@ -93,11 +93,14 @@ export function getDockerInstance(node?: ComputeNode): Docker {
 export const SERVICE_CONTAINER_MAP: Record<string, string> = {
     'OpenCode IDE': 'flexia-opencode',
     'Agent Zero Cluster': 'flexia-agent-zero',
-    'AI Router Swarm': 'ai-router-service'
+    'AI Router Swarm': 'flexia-ai-router'
 };
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 const TAG = IS_DEV ? 'dev' : 'latest';
+
+// Helper to determine host address for containers
+const HOST_ADDRESS = process.platform === 'linux' ? '172.17.0.1' : 'host.docker.internal';
 
 export const SERVICE_DEFAULTS: Record<string, {
     image: string,
@@ -109,18 +112,31 @@ export const SERVICE_DEFAULTS: Record<string, {
     'OpenCode IDE': {
         image: `flexia/opencode:${TAG}`,
         ports: { '8080': '8080' }, // Host:Container
-        env: { 'PASSWORD': 'flexia-password' },
+        env: {
+            'PASSWORD': process.env.OPENCODE_PASSWORD || 'flexia-password',
+            'VAULT_ADDR': process.env.VAULT_ADDR || `http://${HOST_ADDRESS}:8200`
+        },
         type: 'api'
     },
     'Agent Zero Cluster': {
         image: `flexia/agent-zero:${TAG}`,
         ports: { '8081': '80' },
+        env: {
+            'BLOCKCHAIN_RPC_URL': process.env.BLOCKCHAIN_RPC_URL || `http://${HOST_ADDRESS}:8545`,
+            'VAULT_ADDR': process.env.VAULT_ADDR || `http://${HOST_ADDRESS}:8200`,
+            'VAULT_TOKEN': process.env.VAULT_TOKEN || ''
+        },
         type: 'worker'
     },
     'AI Router Swarm': {
         image: 'ai-router-service:latest',
         ports: { '8082': '3000' }, // Standardize on 8082 for the main swarm node
-        env: { 'AI_ROUTER_IMAGE': 'ai-router-service:latest' },
+        env: {
+            'AI_ROUTER_IMAGE': 'ai-router-service:latest',
+            'BLOCKCHAIN_RPC_URL': process.env.BLOCKCHAIN_RPC_URL || `http://${HOST_ADDRESS}:8545`,
+            'VAULT_ADDR': process.env.VAULT_ADDR || `http://${HOST_ADDRESS}:8200`,
+            'VAULT_TOKEN': process.env.VAULT_TOKEN || ''
+        },
         type: 'router'
     },
     'FlexIA Blockchain': {
@@ -266,16 +282,29 @@ export async function createContainer(config: {
         }
     }
 
+    const HostConfig: any = {
+        PortBindings,
+        Binds: config.binds || [],
+        RestartPolicy: { Name: 'unless-stopped' }
+    };
+
+    // Attempt to attach to 'flexia-network' if it exists for better service discovery
+    try {
+        const networks = await docker.listNetworks();
+        const flexiaNet = networks.find((n: any) => n.Name === 'flexia-network');
+        if (flexiaNet) {
+            HostConfig.NetworkMode = 'flexia-network';
+        }
+    } catch (netErr) {
+        console.warn(`[Docker] Failed to check networks, defaulting to bridge: ${(netErr as any).message}`);
+    }
+
     const container = await docker.createContainer({
         Image: config.image,
         name: config.name,
         Env,
         ExposedPorts,
-        HostConfig: {
-            PortBindings,
-            Binds: config.binds || [],
-            RestartPolicy: { Name: 'unless-stopped' }
-        }
+        HostConfig
     });
 
     await container.start();
@@ -369,3 +398,113 @@ export async function getContainerStats(containerName: string, node?: ComputeNod
         return null;
     }
 }
+
+// Helper for CLI fallback
+async function runDockerCli(command: string): Promise<string> {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    try {
+        const { stdout } = await execAsync(command);
+        return stdout.trim();
+    } catch (err: any) {
+        throw new Error(`CLI Command Failed: ${command} -> ${err.message}`);
+    }
+}
+
+// Robust Container Operations with CLI Fallback
+
+export async function inspectContainerState(containerName: string, node?: ComputeNode): Promise<{ Running: boolean, Status: string, Missing: boolean }> {
+    const docker = getDockerInstance(node);
+    const container = docker.getContainer(containerName);
+
+    try {
+        const info = await container.inspect();
+        return {
+            Running: info.State.Running,
+            Status: info.State.Status,
+            Missing: false
+        };
+    } catch (err: any) {
+        // If it's a connection error (not 404), try CLI
+        if (err.statusCode !== 404 && (!node || node.connectionConfig.protocol === 'socket')) {
+            try {
+                // Use JSON format for robustness
+                const output = await runDockerCli(`docker inspect --format "{{json .}}" ${containerName}`);
+                const data = JSON.parse(output);
+                return {
+                    Running: data.State?.Running || false,
+                    Status: data.State?.Status || 'unknown',
+                    Missing: false
+                };
+            } catch (cliErr) {
+                // If CLI also fails, assume missing or truly broken
+                // But check if CLI error was "No such object"
+                if ((cliErr as any).message.includes('No such object')) {
+                    return { Running: false, Status: 'missing', Missing: true };
+                }
+                console.warn(`[Docker] Inspect fallback failed: ${(cliErr as any).message}`);
+            }
+        }
+
+        if (err.statusCode === 404) return { Running: false, Status: 'missing', Missing: true };
+        throw err;
+    }
+}
+
+export async function startContainer(containerName: string, node?: ComputeNode): Promise<void> {
+    const docker = getDockerInstance(node);
+    const container = docker.getContainer(containerName);
+
+    try {
+        await container.start();
+    } catch (err: any) {
+        if (err.statusCode === 304) return; // Already started
+        if (err.statusCode === 404) throw err; // Let caller handle missing (create)
+
+        // Connection error fallback
+        if (!node || node.connectionConfig.protocol === 'socket') {
+            await runDockerCli(`docker start ${containerName}`);
+            return;
+        }
+        throw err;
+    }
+}
+
+export async function stopContainer(containerName: string, node?: ComputeNode): Promise<void> {
+    const docker = getDockerInstance(node);
+    const container = docker.getContainer(containerName);
+
+    try {
+        await container.stop();
+    } catch (err: any) {
+        if (err.statusCode === 304) return; // Already stopped
+        if (err.statusCode === 404) return; // Already gone
+
+        // Connection error fallback
+        if (!node || node.connectionConfig.protocol === 'socket') {
+            await runDockerCli(`docker stop ${containerName}`);
+            return;
+        }
+        throw err;
+    }
+}
+
+export async function restartContainer(containerName: string, node?: ComputeNode): Promise<void> {
+    const docker = getDockerInstance(node);
+    const container = docker.getContainer(containerName);
+
+    try {
+        await container.restart();
+    } catch (err: any) {
+        if (err.statusCode === 404) throw err; // Let caller handle missing
+
+        // Connection error fallback
+        if (!node || node.connectionConfig.protocol === 'socket') {
+            await runDockerCli(`docker restart ${containerName}`);
+            return;
+        }
+        throw err;
+    }
+}
+

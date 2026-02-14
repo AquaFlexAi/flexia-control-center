@@ -5,6 +5,7 @@ import { Globe, RefreshCw, Loader2, AlertCircle, ShieldCheck } from 'lucide-reac
 import { NetworkStats } from '@/components/sovereign/NetworkStats';
 import { MinerLeaderboard } from '@/components/sovereign/MinerLeaderboard';
 import { VoucherList } from '@/components/sovereign/VoucherList';
+import { CouncilDashboard } from '@/components/sovereign/CouncilDashboard';
 
 export default function SovereignPage() {
     const [stats, setStats] = useState<any>(null);
@@ -95,7 +96,8 @@ export default function SovereignPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 {/* Earning History (Main Content) */}
-                <div className="xl:col-span-2">
+                <div className="xl:col-span-2 space-y-8">
+                    <CouncilDashboard />
                     <VoucherList vouchers={vouchers} />
                 </div>
 

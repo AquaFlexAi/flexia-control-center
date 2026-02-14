@@ -7,6 +7,20 @@ import { getDockerInstance, getContainerName } from './src/lib/docker';
 import { createServerClient } from '@supabase/ssr';
 import { Client } from 'ssh2';
 import { HostingProviderFactory, HostingManager } from './src/lib/hosting';
+import HttpProxy from 'http-proxy';
+
+const proxy = HttpProxy.createProxyServer({
+  target: process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('http', 'ws') || 'ws://localhost:8000',
+  ws: true,
+  changeOrigin: true,
+});
+
+proxy.on('error', (err, req, socket) => {
+  console.error('[Proxy] Error:', err);
+  if (!socket.destroyed && (socket as any).writable) {
+    socket.end();
+  }
+});
 
 const port = parseInt(process.env.PORT || '3000', 10);
 const dev = process.env.NODE_ENV !== 'production';
@@ -53,6 +67,11 @@ try {
 
   server.on('upgrade', (request, socket, head) => {
     const { pathname } = parse(request.url!, true);
+
+    if (pathname?.startsWith('/api/supabase')) {
+      proxy.ws(request, socket, head);
+      return;
+    }
 
     if (pathname === '/api/ws/terminal') {
       wss.handleUpgrade(request, socket, head, (ws) => {
@@ -292,6 +311,7 @@ try {
           ws.send(JSON.stringify({ type: 'services', data: payload }));
         }
       } catch (err: any) {
+        console.error('[ServicesWS] Error emitting snapshot:', err);
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'error', message: err?.message || 'services stream error' }));
         }

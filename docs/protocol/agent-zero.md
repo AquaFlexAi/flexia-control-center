@@ -1,3 +1,11 @@
+---
+title: "Agent Zero Integration"
+description: "Documentation for Agent Zero, the core AI capability of the FlexIA platform, including architecture and features."
+keywords: ["agent zero", "ai agent", "integration", "chat interface", "memory"]
+category: "Features"
+last_updated: "2026-02-13"
+---
+
 # Agent Zero Integration
 
 Agent Zero is the core AI capability of the Flexia platform. It operates as an autonomous agent service that users can interact with via a chat interface.
@@ -32,3 +40,4 @@ The integration uses a secure API pattern:
 - **Cookie-based Auth**: Uses `csrf_token_{runtime_id}` cookies.
 
 *Source: `src/lib/agent-zero/api.ts`*
+

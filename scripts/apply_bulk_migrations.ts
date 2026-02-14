@@ -1,3 +1,4 @@
+
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -16,10 +17,12 @@ async function applyAllMigrations() {
         const filePath = path.join(MIGRATIONS_DIR, file);
         console.log(`📄 Applying ${file}...`);
         try {
-            // Use cat to pipe the file content into docker exec psql
-            // Using powershell equivalent if on windows, but the run_command tool handles shell
-            const cmd = `cat ${filePath} | docker exec -i ${DB_CONTAINER} psql -U postgres -d postgres`;
-            execSync(cmd, { stdio: 'inherit' });
+            const sqlContent = fs.readFileSync(filePath, 'utf-8');
+            // Use input option to pass content to stdin, avoiding shell pipe issues
+            execSync(`docker exec -i ${DB_CONTAINER} psql -U postgres -d postgres`, { 
+                input: sqlContent,
+                stdio: ['pipe', 'inherit', 'inherit'] 
+            });
             console.log(`✅ ${file} applied.`);
         } catch (e: any) {
             console.warn(`⚠️  Warning applying ${file}: ${e.message}`);
@@ -30,9 +33,17 @@ async function applyAllMigrations() {
     // Also apply my custom fix for deployed_instances if not covered
     console.log("📄 Applying custom fix: 20260213000001_fix_deployed_instances_schema.sql...");
     try {
-        const cmd = `cat supabase/docker/migrations/20260213000001_fix_deployed_instances_schema.sql | docker exec -i ${DB_CONTAINER} psql -U postgres -d postgres`;
-        execSync(cmd, { stdio: 'inherit' });
-        console.log("✅ Custom fix applied.");
+        const fixPath = 'supabase/docker/migrations/20260213000001_fix_deployed_instances_schema.sql';
+        if (fs.existsSync(fixPath)) {
+             const sqlContent = fs.readFileSync(fixPath, 'utf-8');
+             execSync(`docker exec -i ${DB_CONTAINER} psql -U postgres -d postgres`, {
+                input: sqlContent,
+                stdio: ['pipe', 'inherit', 'inherit']
+             });
+             console.log("✅ Custom fix applied.");
+        } else {
+             console.log("ℹ️ Custom fix file not found (maybe already in bulk list).");
+        }
     } catch (e) {
         console.log("ℹ️ Custom fix already applied or failed.");
     }

@@ -1,4 +1,12 @@
-# Integrations
+---
+title: "Third-Party Integrations"
+description: "Documentation for external service integrations in FlexIA, including ClickUp and other management tools."
+keywords: ["integrations", "clickup", "api", "external services", "tools"]
+category: "Features"
+last_updated: "2026-02-13"
+---
+
+# Third-Party Integrations
 
 Flexia Control Center integrates with external tools to enhance project management and data availability.
 
@@ -26,3 +34,4 @@ Internal services for maintaining the decentralized aspects of the platform.
 ### Kafka (Events)
 - **Purpose**: Asynchronous event handling for system-wide notifications and logging.
 - **Library**: `kafkajs` integration in `src/lib/events/kafka.ts`.
+

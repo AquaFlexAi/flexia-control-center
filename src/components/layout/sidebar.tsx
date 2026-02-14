@@ -16,6 +16,7 @@ import {
     Server,
     BarChart3,
     Globe,
+    BookOpen,
     X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const menuItems = [
     { icon: Server, label: "Instances", href: "/instances", permission: 'view_dashboard' },
     { icon: BarChart3, label: "Usage", href: "/usage", permission: 'view_dashboard' },
     { icon: Globe, label: "Network", href: "/sovereign", permission: 'view_dashboard' },
+    { icon: BookOpen, label: "Docs", href: "/docs", permission: 'view_dashboard' },
     { icon: Palette, label: "Branding", href: "/branding", permission: 'view_settings' },
     { icon: ClipboardList, label: "Planning", href: "/planning", permission: 'view_settings' },
     { icon: ShieldCheck, label: "Security", href: "/security", permission: 'view_settings' },

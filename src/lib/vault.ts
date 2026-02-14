@@ -1,75 +1,87 @@
-/**
- * Centralized HashiCorp Vault Secret Retrieval
- * Logic derived from oracle.ts for ecosystem-wide use.
- */
 
-export interface VaultSecret {
-    [key: string]: any;
+import vault from 'node-vault';
+
+// Initialize Vault client
+const client = vault({
+    apiVersion: 'v1',
+    endpoint: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',
+    token: process.env.VAULT_TOKEN,
+});
+
+export class VaultService {
+    private static instance: VaultService;
+    private initialized = false;
+
+    private constructor() { }
+
+    public static getInstance(): VaultService {
+        if (!VaultService.instance) {
+            VaultService.instance = new VaultService();
+        }
+        return VaultService.instance;
+    }
+
+    /**
+     * Reads a secret from Vault
+     * @param path Path to the secret (e.g., 'secret/data/my-secret')
+     */
+    async getSecret(path: string): Promise<any> {
+        try {
+            const result = await client.read(path);
+            return result.data.data; // Vault KV v2 structure
+        } catch (error: any) {
+            // console.error(`[Vault] Error reading secret at ${path}:`, error.message);
+            // throw error;
+            return null; // Return null on failure to allow fallback
+        }
+    }
+
+    /**
+     * Writes a secret to Vault
+     * @param path Path to the secret
+     * @param data Key-value pairs to store
+     */
+    async writeSecret(path: string, data: any): Promise<void> {
+        try {
+            await client.write(path, { data });
+        } catch (error: any) {
+            console.error(`[Vault] Error writing secret to ${path}:`, error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Checks if Vault is sealed
+     */
+    async isSealed(): Promise<boolean> {
+        try {
+            const status = await client.status();
+            return status.sealed;
+        } catch (error: any) {
+            console.error('[Vault] Error checking status:', error.message);
+            return true; // Assume sealed/down on error
+        }
+    }
 }
 
-export async function getVaultSecret(bucket: string): Promise<VaultSecret | null> {
-    const vaultAddr = process.env.VAULT_ADDR || 'http://localhost:8200';
-    const vaultToken = process.env.VAULT_TOKEN || 'root';
-    const secretPath = `secret/data/flexia/${bucket}`;
+export const vaultService = VaultService.getInstance();
 
+/**
+ * Helper to get a config value from Vault or return a default
+ * @param category The category (e.g., 'deployments-core')
+ * @param key The specific key (e.g., 'registry')
+ * @param defaultValue Fallback value if Vault is unreachable or key is missing
+ */
+export async function getConfigValue(category: string, key: string, defaultValue: string): Promise<string> {
     try {
-        const res = await fetch(`${vaultAddr}/v1/${secretPath}`, {
-            headers: { 'X-Vault-Token': vaultToken },
-            // Add a short timeout to prevent blocking if Vault is down
-            signal: AbortSignal.timeout(2000)
-        });
+        const secretPath = `secret/data/${category}`;
+        const secret = await vaultService.getSecret(secretPath);
 
-        if (res.ok) {
-            const json = await res.json();
-            return json.data?.data || null;
+        if (secret && secret[key]) {
+            return secret[key];
         }
-
-        // Log errors but don't throw, allowing fallback to env
-        if (res.status !== 404) {
-            console.warn(`[Vault] Non-200 response for bucket ${bucket}: ${res.status} ${res.statusText}`);
-        }
-    } catch (err: any) {
-        console.warn(`[Vault] Unreachable for bucket ${bucket}: ${err.message}`);
+    } catch (err) {
+        // Silent failure, fallback
     }
-
-    return null;
-}
-
-/**
- * Get a specific configuration value, prioritizing Vault
- */
-export async function getConfigValue(bucket: string, key: string, fallback?: string): Promise<string> {
-    // 1. Try Vault
-    const secrets = await getVaultSecret(bucket);
-    if (secrets && secrets[key]) {
-        return secrets[key];
-    }
-
-    // 2. Fallback to Env
-    if (process.env[key]) {
-        return process.env[key]!;
-    }
-
-    if (fallback !== undefined) {
-        return fallback;
-    }
-
-    throw new Error(`Configuration key "${key}" not found in Vault bucket "${bucket}" or environment.`);
-}
-
-/**
- * Assert that a secret MUST come from Vault in production
- */
-export async function assertVaultSecret(bucket: string, key: string): Promise<string> {
-    const secrets = await getVaultSecret(bucket);
-    if (secrets && secrets[key]) {
-        return secrets[key];
-    }
-
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error(`CRITICAL SECURITY FAILURE: Secret "${key}" missing in Vault bucket "${bucket}".`);
-    }
-
-    // Dev fallback
-    return process.env[key] || '';
+    return defaultValue;
 }

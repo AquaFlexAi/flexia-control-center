@@ -133,6 +133,16 @@ async function main() {
             log(`   ✅ User ${user.email} synced.`);
         }
 
+        // 5. RBAC PERMISSIONS (Critical)
+        log('\nPhase 5: Seeding RBAC Permissions');
+        const { execSync } = require('child_process');
+        try {
+            execSync('bun scripts/seed_rbac.ts', { stdio: 'inherit', cwd: process.cwd() });
+            log('✅ RBAC Permissions synced.');
+        } catch (e: any) {
+            log(`❌ Failed to seed RBAC permissions: ${e.message}`);
+        }
+
         log('\n🎉 SEEDING COMPLETE 🎉');
     } catch (err: any) {
         log(`\n🔥 FATAL ERROR: ${err.message}`);

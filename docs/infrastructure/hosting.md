@@ -1,4 +1,12 @@
-# Hosting & Service Management
+---
+title: "Multi-Cloud Hosting"
+description: "Overview of the FlexIA hosting manager, supporting multiple cloud providers through a unified interface."
+keywords: ["hosting", "cloud", "multi-cloud", "hetzner", "google cloud"]
+category: "Features"
+last_updated: "2026-02-13"
+---
+
+# Multi-Cloud Hosting Manager
 
 Flexia Control Center provides a unified interface for deploying and managing services across different cloud providers (multi-cloud) and local environments.
 
@@ -52,3 +60,4 @@ The platform maps friendly service names to technical container specs.
 - **FlexIA Blockchain**: Oracle & Ledger (`flexia-blockchain`).
 
 *Source: `src/lib/docker.ts`, `src/lib/hosting/services/manager.ts`*
+
