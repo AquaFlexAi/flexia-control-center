@@ -1,0 +1,36 @@
+{
+  "suite": "staking-economics",
+  "timestamp": "2026-02-14T05:56:04.662Z",
+  "summary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "avgDuration": 184
+  },
+  "traces": [
+    {
+      "traceId": "6d7dd1d9-2c5c-43bf-84ab-af1ccd323066",
+      "spanId": "0634c3cb-9562-4f",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 401,
+      "durationMs": 184,
+      "timestamp": "2026-02-14T05:56:04.659Z",
+      "requestHeaders": {
+        "X-Trace-ID": "6d7dd1d9-2c5c-43bf-84ab-af1ccd323066",
+        "X-Span-ID": "0634c3cb-9562-4f",
+        "X-Test-Run": "true",
+        "Content-Type": "application/json",
+        "Authorization": ""
+      },
+      "responseHeaders": {
+        "connection": "keep-alive",
+        "content-type": "application/json",
+        "date": "Sat, 14 Feb 2026 05:56:04 GMT",
+        "keep-alive": "timeout=5",
+        "transfer-encoding": "chunked",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    }
+  ]
+}

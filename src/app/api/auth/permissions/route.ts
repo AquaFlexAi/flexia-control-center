@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { AuthPermissionsResponse, OrganizationMember, RolePermission } from "@/types/auth";
+import { Role } from "@/utils/rbac";
 
 export const dynamic = 'force-dynamic';
 
@@ -10,31 +12,37 @@ export async function GET() {
 
     if (!user) {
         console.warn('[API] /api/auth/permissions - No user found.');
-        return NextResponse.json({ permissions: [], role: null }, { status: 401 });
+        const response: AuthPermissionsResponse = { permissions: [], role: null };
+        return NextResponse.json(response, { status: 401 });
     }
 
     // Get Role
-    let role = user.user_metadata?.role;
+    let role: Role | null = user.user_metadata?.role as Role;
     if (!role) {
         // Fallback to org members
         const { data: member } = await supabase
             .from('organization_members')
             .select('role')
             .eq('email', user.email)
-            .single();
-        role = member?.role;
+            .single<OrganizationMember>();
+        
+        if (member) {
+            role = member.role;
+        }
     }
 
     if (!role) {
         console.warn(`[API] /api/auth/permissions - No role found for ${user.email}`);
-        return NextResponse.json({ permissions: [], role: null });
+        const response: AuthPermissionsResponse = { permissions: [], role: null };
+        return NextResponse.json(response);
     }
 
     // Get Permissions
     const { data: permissions } = await supabase
         .from('role_permissions')
         .select('permission_key')
-        .eq('role_key', role);
+        .eq('role_key', role)
+        .returns<Pick<RolePermission, 'permission_key'>[]>();
 
     let permissionKeys = permissions?.map(p => p.permission_key) || [];
 
@@ -42,13 +50,17 @@ export async function GET() {
     if (permissionKeys.length === 0) {
         console.warn(`[API] /api/auth/permissions - DB permissions empty for ${role}. Using fallback.`);
         const { DEFAULT_ROLE_PERMISSIONS } = await import("@/utils/rbac");
-        permissionKeys = DEFAULT_ROLE_PERMISSIONS[role as keyof typeof DEFAULT_ROLE_PERMISSIONS] || [];
+        // Ensure role is a key of DEFAULT_ROLE_PERMISSIONS before accessing
+        if (role in DEFAULT_ROLE_PERMISSIONS) {
+            permissionKeys = DEFAULT_ROLE_PERMISSIONS[role as keyof typeof DEFAULT_ROLE_PERMISSIONS] || [];
+        }
     }
 
     console.log(`[API] /api/auth/permissions - User: ${user.email}, Role: ${role}, Perms: ${permissionKeys.length}`);
 
-    return NextResponse.json({
+    const response: AuthPermissionsResponse = {
         role,
         permissions: permissionKeys
-    });
+    };
+    return NextResponse.json(response);
 }

@@ -1,5 +1,10 @@
-node_modules
-.git
-.next
-.vscode
-supabase/docker/kafka_data
+# Control Center Docker Ignore
+node_modules/
+dist/
+.next/
+out/
+.env*
+!.env.example
+npm-debug.log*
+.npm/
+.vercel/

@@ -2,7 +2,8 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { determineTier } from '@/services/billing';
+import { determineTier, initializeMonthlyQuota } from '@/services/billing';
+import { calculateRevenueSplit } from '@/services/economics';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-01-27.acacia' as any,
@@ -49,17 +50,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
 }
 
-async function handleCheckoutCompleted(session: any) {
-    const userId = session.metadata.userId;
-    const tier = session.metadata.tier || 'pro'; // Fallback
-    const customerId = session.customer;
-    const subscriptionId = session.subscription;
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+    const userId = session.metadata?.userId;
+    const tier = (session.metadata?.tier as string) || 'pro'; // Fallback
+    const customerId = session.customer as string;
+    const subscriptionId = session.subscription as string;
+
+    if (!userId) {
+        console.error('[Stripe Webhook] Missing userId in metadata');
+        return;
+    }
 
     console.log(`[Stripe Webhook] Checkout completed for user ${userId}, tier: ${tier}`);
 
     const subResponse = await stripe.subscriptions.retrieve(subscriptionId);
-    const subscription = subResponse as any;
-    const priceId = subscription.items?.data?.[0]?.price?.id;
+    const subscription = subResponse as unknown as Stripe.Subscription & {
+        current_period_start: number;
+        current_period_end: number;
+    };
+    const priceId = subscription.items.data[0]?.price.id;
     const resolvedTier = priceId ? determineTier(priceId) : tier;
 
     // Upsert subscription record
@@ -89,10 +98,13 @@ async function handleCheckoutCompleted(session: any) {
     await initQuota(userId, resolvedTier);
 }
 
-async function handleSubscriptionChange(rawSubscription: any) {
-    const subscription = rawSubscription as any;
+async function handleSubscriptionChange(rawSubscription: Stripe.Subscription) {
+    const subscription = rawSubscription as unknown as Stripe.Subscription & {
+        current_period_start: number;
+        current_period_end: number;
+    };
     const customerId = subscription.customer as string;
-    const priceId = subscription.items?.data?.[0]?.price?.id;
+    const priceId = subscription.items.data[0]?.price.id;
     const tier = priceId ? determineTier(priceId) : undefined;
 
     console.log(`[Stripe Webhook] Subscription change for customer ${customerId}, status: ${subscription.status}`);
@@ -124,8 +136,8 @@ async function handleSubscriptionChange(rawSubscription: any) {
     }
 }
 
-async function handleInvoicePayment(invoice: any) {
-    const customerId = invoice.customer;
+async function handleInvoicePayment(invoice: Stripe.Invoice) {
+    const customerId = invoice.customer as string;
 
     // Find user by stripe_customer_id
     const { data: sub } = await supabaseAdmin
@@ -141,35 +153,29 @@ async function handleInvoicePayment(invoice: any) {
 
     console.log(`[Stripe Webhook] Invoice paid for user ${sub.user_id}, refreshing quota`);
 
+    // Calculate and log Revenue Split (Islamic Finance Model)
+    const amountPaid = invoice.amount_paid / 100; // Convert cents to dollars
+    const currency = invoice.currency;
+    if (amountPaid > 0) {
+        const split = calculateRevenueSplit(amountPaid);
+        console.log(`[Revenue Split] Payment: ${amountPaid} ${currency}`);
+        console.log(`[Revenue Split] Miner Share (Ujrah): ${split.minerShare}`);
+        console.log(`[Revenue Split] Protocol Share (Surplus): ${split.protocolShare}`);
+        console.log(`[Revenue Split] Allocations: OPS=${split.allocations.ops}, RND=${split.allocations.rnd}, ProfitPool=${split.allocations.profitPool}`);
+        
+        // TODO: Record this to a 'revenue_ledger' table in the database
+    }
+
     // Reset monthly quota on successful payment
-    await initQuota(sub.user_id, sub.tier);
+    await initializeMonthlyQuota(sub.user_id, sub.tier);
 }
 
 /**
  * Initialize or reset monthly quota for a user
+ * @deprecated Use initializeMonthlyQuota from @/services/billing instead
  */
 async function initQuota(userId: string, tier: string) {
-    const QUOTAS: Record<string, number> = {
-        free: 10000,
-        pro: 1000000,
-        enterprise: 999999999,
-    };
-
-    const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
-    const limit = QUOTAS[tier] || QUOTAS.free;
-
-    const { error } = await supabaseAdmin
-        .from('user_usage_quotas')
-        .upsert({
-            user_id: userId,
-            month_year: currentMonth,
-            token_usage_limit: limit,
-            token_usage_current: 0,
-        }, { onConflict: 'user_id,month_year' });
-
-    if (error) {
-        console.error('[Stripe Webhook] Failed to init quota:', error);
-    } else {
-        console.log(`[Stripe Webhook] Quota initialized: ${limit} tokens for ${tier}`);
-    }
+    // This local function is deprecated in favor of the centralized one in billing service
+    // keeping it temporarily as a wrapper or fallback if needed, but we should switch to the imported one.
+    await initializeMonthlyQuota(userId, tier);
 }

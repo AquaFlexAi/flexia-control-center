@@ -44,9 +44,14 @@ export interface HealthStatus {
     lastChecked: Date;
 }
 
-export interface HostingProvider {
+export interface BaseNodeConfig {
     name: string;
-    provisionNode(config: any): Promise<ComputeNode>;
+    [key: string]: any;
+}
+
+export interface HostingProvider<TConfig extends BaseNodeConfig = BaseNodeConfig> {
+    name: string;
+    provisionNode(config: TConfig): Promise<ComputeNode>;
     terminateNode(nodeId: string): Promise<boolean>;
     listNodes(): Promise<ComputeNode[]>;
 

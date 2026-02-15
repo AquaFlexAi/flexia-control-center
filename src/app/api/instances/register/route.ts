@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server';
 import crypto from 'node:crypto';
+import { InstanceConfig } from '@/types/instance';
 
 // Initialize Admin Client
 const supabaseAdmin = createAdminClient();
@@ -10,7 +11,10 @@ import { verifySignature, getRegistrationMessage } from '@/lib/web3';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { inviteToken, name, provider, region, version, config, signature, walletAddress, timestamp, serviceId } = body;
+        const { inviteToken, name, provider, region, version, signature, walletAddress, timestamp, serviceId } = body;
+        
+        // Cast and validate config
+        const config = body.config as InstanceConfig;
 
         let isAuthenticated = false;
         let authMethod = 'unknown';
@@ -38,6 +42,12 @@ export async function POST(request: Request) {
                 authMethod = 'wallet';
                 // Store wallet in config
                 if (!config.ownerWallet) config.ownerWallet = walletAddress;
+                
+                // VALIDATION: Hardware Attestation for Miners
+                if (!config.hardware && process.env.NODE_ENV === 'production') {
+                     // In prod, warn or reject. For now, we log warning to allow transition.
+                     console.warn(`[Register] Miner ${walletAddress} missing hardware attestation.`);
+                }
             } else {
                 return NextResponse.json({ error: 'Invalid wallet signature' }, { status: 401 });
             }

@@ -12,7 +12,8 @@ FlexIA operates as a hybridized architecture where centralized orchestration mee
 ### A. The Control Plane (Management Tier)
 The **Control Center** acts as the high-level orchestrator. It is built for professional enterprise management of AI workloads.
 - **Runtime**: Bun-optimized Next.js environment.
-- **Telemetry**: Real-time observability via OpenTelemetry and Kafka-based event ingestion.
+- **Event Bus**: **Apache Kafka** decoupling API ingestion from database writes (via `usage-ingestion` workers).
+- **Telemetry**: Real-time observability via OpenTelemetry.
 - **Identity Service**: Manages organization mandates and HashiCorp Vault-secured secrets.
 
 ### B. The Sovereign Network (P2P Execution Tier)

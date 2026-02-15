@@ -118,7 +118,7 @@ export default function BlockchainAdminPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-1">
-                            <p className="text-xs font-medium">Token: <span className="font-mono">{deployments.token?.slice(0, 10)}...</span></p>
+                            <p className="text-xs font-medium">Token: <span className="font-mono">{deployments.flxToken?.slice(0, 10)}...</span></p>
                             <p className="text-xs font-medium">Registry: <span className="font-mono">{deployments.registry?.slice(0, 10)}...</span></p>
                             <p className="text-xs text-muted-foreground">Deployed: {new Date(deployments.timestamp).toLocaleDateString()}</p>
                         </div>

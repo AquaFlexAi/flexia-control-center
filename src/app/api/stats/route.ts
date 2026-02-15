@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
 import { authorize } from "@/utils/supabase/auth-check";
+import { StatsResponse } from "@/types/telemetry";
 
 export async function GET() {
     const { authorized, response, user } = await authorize('view_dashboard');
@@ -40,7 +41,14 @@ export async function GET() {
 
     if (telemetryError) {
         console.error(`[Stats] Telemetry fetch failed:`, telemetryError.message);
-        return NextResponse.json({ error: `Telemetry fetch failed: ${telemetryError.message}`, details: telemetryError }, { status: 500 });
+        return NextResponse.json<StatsResponse>({ 
+            error: `Telemetry fetch failed: ${telemetryError.message}`, 
+            details: telemetryError,
+            credits: 0,
+            tokens: "0",
+            compute: "0%",
+            uptime: "0%"
+        }, { status: 500 });
     }
 
     // Calculate Average Compute and Total Tokens
@@ -58,7 +66,7 @@ export async function GET() {
 
     const avgCompute = computeCount > 0 ? (computeSum / computeCount).toFixed(1) : "0";
 
-    return NextResponse.json({
+    return NextResponse.json<StatsResponse>({
         credits: creditsValue,
         tokens: totalTokens > 1000000 ? (totalTokens / 1000000).toFixed(1) + "M" : totalTokens.toLocaleString(),
         compute: avgCompute + "%",

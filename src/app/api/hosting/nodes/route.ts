@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authorize } from '@/utils/supabase/auth-check';
 import { HostingManager } from '@/lib/hosting/services/manager';
 import { HostingProviderFactory } from '@/lib/hosting/services/factory';
-import { ComputeNode } from '@/lib/hosting/types';
+import { ComputeNode, HostingNodesPostRequest, HostingNodesResponse } from '@/types/hosting';
 
 export async function GET(request: Request) {
     // RBAC Check
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         );
 
         const factory = HostingProviderFactory.getInstance();
-        const allNodes: Record<string, ComputeNode[]> = {};
+        const allNodes: HostingNodesResponse = {};
 
         await Promise.all(enabledProviders.map(async (provider) => {
             try {
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { providerId, configId, config } = body;
+        const { providerId, configId, config } = body as HostingNodesPostRequest;
 
         if (!providerId || !config) {
             return NextResponse.json({ error: "Missing providerId or config" }, { status: 400 });

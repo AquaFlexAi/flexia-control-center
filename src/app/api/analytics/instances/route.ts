@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import { authorize } from '@/utils/supabase/auth-check';
 import { API_ROUTE_CONFIG } from '@/config/api-permissions';
+import { 
+    DeployedInstance, 
+    InstanceStatsAccumulator, 
+    EnrichedInstance, 
+    AnalyticsSummary, 
+    InstanceStats 
+} from '@/types/instance';
+import { InstanceUsageEvent } from '@/types/usage';
 
 export async function GET() {
     try {
@@ -16,19 +24,20 @@ export async function GET() {
         const { data: instances, error } = await supabaseAdmin
             .from('deployed_instances')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .returns<DeployedInstance[]>();
 
         if (error) throw error;
 
         // 2. Fetch aggregated usage stats per instance
-        // 2. Fetch aggregated usage stats per instance
         const { data: usageEvents } = await supabaseAdmin
             .from('instance_usage_events')
-            .select('instance_id, total_tokens, cost, processing_time_ms, uptime_percentage, avg_latency_ms, error_rate, resource_value_usd, cpu_seconds, gpu_seconds, bandwidth_bytes');
+            .select('instance_id, total_tokens, cost, processing_time_ms, uptime_percentage, avg_latency_ms, error_rate, resource_value_usd, cpu_seconds, gpu_seconds, bandwidth_bytes')
+            .returns<Partial<InstanceUsageEvent>[]>();
 
         // 3. Aggregate stats per instance
-        const statsMap: Record<string, any> = {};
-        (usageEvents || []).forEach(e => {
+        const statsMap: Record<string, InstanceStatsAccumulator> = {};
+        (usageEvents || []).forEach((e) => {
             if (!e.instance_id) return;
             if (!statsMap[e.instance_id]) {
                 statsMap[e.instance_id] = {
@@ -58,8 +67,20 @@ export async function GET() {
         });
 
         // 4. Compute averages and attach to instances
-        const enriched = (instances || []).map(inst => {
-            const s = statsMap[inst.id] || {};
+        const enriched: EnrichedInstance[] = (instances || []).map((inst) => {
+            const s = statsMap[inst.id] || {
+                totalRequests: 0,
+                totalTokens: 0,
+                totalCost: 0,
+                totalResourceValue: 0,
+                totalCpuSeconds: 0,
+                totalGpuSeconds: 0,
+                totalBandwidthBytes: 0,
+                latencies: [],
+                uptimes: [],
+                errorRates: [],
+            } as InstanceStatsAccumulator; // Default empty accumulator
+
             const avgLatency = s.latencies?.length
                 ? Math.round(s.latencies.reduce((a: number, b: number) => a + b, 0) / s.latencies.length)
                 : null;
@@ -73,6 +94,18 @@ export async function GET() {
             // Determine if heartbroken via timestamp
             const lastBeat = inst.last_heartbeat_at ? new Date(inst.last_heartbeat_at).getTime() : 0;
             const isOnline = inst.status === 'active' && (Date.now() - lastBeat) < 120000;
+
+            const instanceStats: InstanceStats = {
+                totalRequests: s.totalRequests || 0,
+                totalTokens: s.totalTokens || 0,
+                totalCost: s.totalCost || 0,
+                avgLatencyMs: avgLatency,
+                avgUptimePercent: avgUptime,
+                avgErrorRate: avgErrorRate,
+                totalCpuSeconds: s.totalCpuSeconds || 0,
+                totalGpuSeconds: s.totalGpuSeconds || 0,
+                totalBandwidthMB: Math.round((s.totalBandwidthBytes || 0) / (1024 * 1024) * 100) / 100,
+            };
 
             return {
                 id: inst.id,
@@ -93,17 +126,7 @@ export async function GET() {
                 totalResourceValue: Number(inst.total_resource_value_contributed) || 0,
                 lastProfitDistribution: inst.last_profit_distribution_at,
                 // Usage stats
-                stats: {
-                    totalRequests: s.totalRequests || 0,
-                    totalTokens: s.totalTokens || 0,
-                    totalCost: s.totalCost || 0,
-                    avgLatencyMs: avgLatency,
-                    avgUptimePercent: avgUptime,
-                    avgErrorRate: avgErrorRate,
-                    totalCpuSeconds: s.totalCpuSeconds || 0,
-                    totalGpuSeconds: s.totalGpuSeconds || 0,
-                    totalBandwidthMB: Math.round((s.totalBandwidthBytes || 0) / (1024 * 1024) * 100) / 100,
-                },
+                stats: instanceStats,
             };
         });
 
@@ -115,12 +138,12 @@ export async function GET() {
         // We aggregate total seconds and divide by a time window (e.g., 24h = 86400s) to get "current" rate
         // For now, we'll just sum the raw capacity associated with active instances
         const onlineInstances = enriched.filter(i => i.isOnline);
-        const activeGpus = onlineInstances.filter(i => i.stats.totalGpuSeconds > 0).length; // Proxy
+        // const activeGpus = onlineInstances.filter(i => i.stats.totalGpuSeconds > 0).length; // Proxy
 
         // Mocking a realistic Hashrate based on online count to look good
         const estimatedHashrate = (onlineInstances.length * 45) + (Math.random() * 10); // ~45 TH/s per node avg
 
-        const summary = {
+        const summary: AnalyticsSummary = {
             totalInstances: enriched.length,
             onlineCount: onlineInstances.length,
             offlineCount: enriched.filter(i => !i.isOnline).length,

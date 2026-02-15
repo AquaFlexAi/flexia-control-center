@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { listContainers, getContainerName } from "@/lib/docker";
 import { authorize } from "@/utils/supabase/auth-check";
 import { API_ROUTE_CONFIG } from "@/config/api-permissions";
+import { Service, ServiceInstance, ServiceCreateRequest } from "@/types/service";
 
 export async function GET(request: Request) {
     const { authorized, response, user, role } = await authorize(API_ROUTE_CONFIG['/api/services'].GET!);
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
 
     // 2. Fetch actually running containers (Local Node for now)
     const runningContainers = await listContainers();
-    const containerMap = new Map(runningContainers.map((c: any) => [c.Names[0].replace('/', ''), c]));
+    const containerMap = new Map(runningContainers.map((c) => [c.Names[0].replace('/', ''), c]));
 
     // 3. Map to frontend expected format with SYNCED status
     // Fixed: deployed_instances now has service_id and total_flx_earned
@@ -57,10 +58,10 @@ export async function GET(request: Request) {
         .from('deployed_instances')
         .select('service_id, total_flx_earned, config');
 
-    const formattedServices = services.map(service => {
+    const formattedServices: Service[] = services.map(service => {
         const instanceCount = service.instances || 1;
         let runningInstances = 0;
-        const instanceDetails: any[] = [];
+        const instanceDetails: ServiceInstance[] = [];
 
         for (let i = 0; i < instanceCount; i++) {
             const expectedName = getContainerName(service.name, i);
@@ -100,6 +101,8 @@ export async function GET(request: Request) {
             is_online: displayStatus === 'online',
             health: health,
             type: service.type || 'Service',
+            run_mode: service.run_mode || 'prod',
+            specs: service.specs || '1vCPU / 1GB',
             region: service.region || 'Global',
             instances: service.instances || 1,
             activeInstances: runningInstances,
@@ -117,7 +120,7 @@ export async function POST(request: Request) {
     if (!authorized) return response!;
 
     try {
-        const body = await request.json();
+        const body: ServiceCreateRequest = await request.json();
         const { createAdminClient } = await import("@/utils/supabase/server");
         const supabaseAdmin = await createAdminClient();
 

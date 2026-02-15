@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { HostingManager } from '@/lib/hosting';
+import { SafeProviderConfig, HostingConfigPostRequest, ProviderConfig } from '@/types/hosting';
 
 const manager = new HostingManager();
 
@@ -14,7 +15,7 @@ export async function GET(req: Request) {
 
         const configs = await manager.getProviderConfigs(providerId);
         
-        const safeConfigs = configs.map(config => ({
+        const safeConfigs: SafeProviderConfig[] = configs.map(config => ({
             ...config,
             credentials: {
                 ...config.credentials,
@@ -37,7 +38,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
-        const { providerId, credentials, id } = await req.json();
+        const body = await req.json();
+        const { providerId, credentials, id } = body as HostingConfigPostRequest;
         
         if (!providerId || !credentials) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -56,7 +58,7 @@ export async function POST(req: Request) {
         }
 
         const result = await manager.saveProviderConfig(providerId, finalCredentials, id);
-        return NextResponse.json(result);
+        return NextResponse.json(result as ProviderConfig);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

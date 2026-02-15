@@ -15,9 +15,10 @@ The Control Plane utilizes the **Bun** runtime for superior I/O performance and 
 - **API**: Unified API layer handling organization management, billing integrations (Stripe), and blockchain sync.
 
 ### B. Event Orchestration: Kafka
-Real-time telemetry and usage records are handled by a distributed **Kafka** bus.
-- **Usage Ingestion**: Miners push usage reports (`usage.reporter.js`) to Kafka to prevent database bottlenecks.
-- **Stream Processing**: Background workers consume events to update reputation scores and trigger alerts.
+Real-time telemetry and usage records are handled by a distributed **Apache Kafka** bus (Control Plane Only).
+- **Buffer Pattern**: The API acts as a producer, pushing events to the `usage-events` topic and returning `202 Accepted` instantly.
+- **Worker Scalability**: `usage-ingestion` workers consume from the topic in consumer groups, allowing horizontal scaling to handle high-throughput bursts from globally distributed miners.
+- **Usage Ingestion**: Miners push usage reports (`usage.reporter.js`) via the API, which are then buffered in Kafka before being batch-inserted into Supabase.
 
 ### C. Security & Secrets: HashiCorp Vault
 The Control Plane follows a "Zero-Trust Secret" policy.

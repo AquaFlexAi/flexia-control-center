@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server';
 import { getDockerInstance, SERVICE_CONTAINER_MAP, SERVICE_DEFAULTS, createContainer, inspectContainerState, startContainer, stopContainer, restartContainer } from '@/lib/docker';
 import { authorize } from '@/utils/supabase/auth-check';
+import { ServiceOrchestrationRequest } from '@/types/service';
 
 export async function POST(request: Request) {
     // RBAC Check
@@ -10,7 +11,8 @@ export async function POST(request: Request) {
 
     const supabase = await createAdminClient();
 
-    const { serviceId, action, instanceId } = await request.json();
+    const body: ServiceOrchestrationRequest = await request.json();
+    const { serviceId, action, instanceId } = body;
 
     if (!serviceId || !['start', 'stop', 'restart'].includes(action)) {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

@@ -1,9 +1,10 @@
 import { resolveAgentZeroUrl } from '@/lib/agent-zero/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { AgentZeroRouteContext } from '@/types/agent-zero';
 
 const AGENT_ZERO_URL = process.env.AGENT_ZERO_URL || 'http://localhost:8081';
 
-async function handler(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+async function handler(req: NextRequest, { params }: AgentZeroRouteContext): Promise<NextResponse> {
   const { path: pathArray } = await params;
   const path = pathArray.join('/');
   

@@ -1,0 +1,18 @@
+[dotenv@17.2.4] injecting env (0) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+🔍 Verifying Scoped Billing Stats...
+👤 Test User: test@flexia.ai (fd2a35aa-1cb9-4799-94e2-a62b9ed658d8)
+
+🌍 Fetching GLOBAL Stats (System Admin)...
+   Total Power: 1006
+   Active Users: 1
+
+🔒 Fetching SCOPED Stats for test@flexia.ai (Owner)...
+   Total Power: 5
+   Active Users: 0
+✅ PASS: Scoped active users count is correct (0 or 1).
+✅ PASS: Global power >= Scoped power.
+
+📋 Verifying Scoped User List...
+   Global Count: 1
+   Scoped Count: 0
+✅ PASS: Scoped user list contains only the target user (or empty).

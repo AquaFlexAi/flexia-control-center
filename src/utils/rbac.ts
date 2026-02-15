@@ -57,6 +57,10 @@ export type Permission =
   // API Access
   | "access_api_keys"
 
+  // Billing (Admin)
+  | "billing:view_all"
+  | "billing:manage_all"
+
   // Sovereign AI Dimension
   | "manage_governance";
 
@@ -80,6 +84,8 @@ export const PERMISSION_DETAILS: Record<Permission, { description: string, modul
   view_billing: { description: 'View current plan and usage', module: 'billing' },
   manage_billing: { description: 'Update payment methods and plans', module: 'billing' },
   view_invoices: { description: 'View and download invoices', module: 'billing' },
+  "billing:view_all": { description: 'View global billing statistics and all user data', module: 'billing' },
+  "billing:manage_all": { description: 'Manually manage user tiers and global economics', module: 'billing' },
 
   view_settings: { description: 'View general settings', module: 'settings' },
   manage_organization: { description: 'Edit organization details', module: 'settings' },
@@ -121,6 +127,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "manage_infrastructure",
     "manage_infrastructure_instances",
     "manage_governance",
+    "view_billing",
+    "manage_billing",
+    "view_invoices",
+    "billing:view_all",
+    "billing:manage_all",
   ],
   owner: [
     "view_dashboard",
@@ -146,6 +157,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "manage_infrastructure",
     "manage_infrastructure_instances",
     "manage_governance",
+    "billing:view_all",
+    "billing:manage_all",
   ],
   admin: [
     "view_dashboard",

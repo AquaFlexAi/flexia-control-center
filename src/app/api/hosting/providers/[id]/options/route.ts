@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HostingProviderFactory } from '@/lib/hosting/services/factory';
 import { HostingManager } from '@/lib/hosting/services/manager';
+import { HostingOptionsResponse } from '@/types/hosting';
 
 export async function GET(
     req: NextRequest,
@@ -13,7 +14,7 @@ export async function GET(
             return NextResponse.json({
                 regions: [{ id: 'local', name: 'Local Machine' }],
                 instanceTypes: [{ id: 'default', name: 'Host Resources', cpu: 0, ram: 0, price: 0 }]
-            });
+            } as HostingOptionsResponse);
         }
 
         const manager = new HostingManager();
@@ -23,7 +24,7 @@ export async function GET(
         const providerDef = providers.find(p => p.id === id || p.name === id);
 
         if (!providerDef) {
-            return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+            return NextResponse.json({ error: 'Provider not found' } as HostingOptionsResponse, { status: 404 });
         }
 
         // 2. Get Credentials (if any) to allow authenticated lookups
@@ -50,12 +51,12 @@ export async function GET(
             provider.getInstanceTypes()
         ]);
 
-        return NextResponse.json({ regions, instanceTypes });
+        return NextResponse.json({ regions, instanceTypes } as HostingOptionsResponse);
 
     } catch (error: any) {
         console.error(`Failed to fetch options for provider ${id}:`, error);
         return NextResponse.json(
-            { error: error.message || 'Failed to fetch provider options' },
+            { regions: [], instanceTypes: [], error: error.message || 'Failed to fetch provider options' } as HostingOptionsResponse,
             { status: 500 }
         );
     }

@@ -53,47 +53,52 @@ export function getJsonRpcProvider() {
  * @param expectedAsset - 'BTC', 'ETH', 'FLX', etc.
  */
 export async function verifyStakingTransaction(txHash: string, expectedAmount: number, expectedAsset: string): Promise<boolean> {
-    const provider = getJsonRpcProvider();
-    const tx = await provider.getTransaction(txHash);
+    try {
+        const provider = getJsonRpcProvider();
+        const tx = await provider.getTransaction(txHash);
 
-    if (!tx) {
-        console.error(`Tx ${txHash} not found`);
-        return false;
-    }
-
-    // Wait for at least 1 confirmation
-    const receipt = await provider.getTransactionReceipt(txHash);
-    if (!receipt || receipt.status !== 1) { // 1 = success
-        console.error(`Tx ${txHash} failed or pending`);
-        return false;
-    }
-
-    // Validation Logic
-    // 1. Check Recipient (Treasury Wallet or Contract)
-    // For now, we assume a specific treasury address for testing
-    // TODO: Move to Env Variable
-    const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_WALLET || "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-
-    // Note: This logic assumes Native ETH transfer. 
-    // For ERC20 (FLX, USDT), we need to decode the 'transfer' function data.
-
-    if (expectedAsset === 'ETH') {
-        if (tx.to?.toLowerCase() !== TREASURY_ADDRESS.toLowerCase()) {
-            console.error(`Tx recipient mismatch: ${tx.to} != ${TREASURY_ADDRESS}`);
+        if (!tx) {
+            console.error(`Tx ${txHash} not found`);
             return false;
         }
 
-        const valueEth = parseFloat(ethers.formatEther(tx.value));
-        // Allow small margin of error for float math? No, crypto requires precision.
-        // But for this MVP JS logic:
-        if (Math.abs(valueEth - expectedAmount) > 0.000001) {
-            console.error(`Tx amount mismatch: ${valueEth} != ${expectedAmount}`);
+        // Wait for at least 1 confirmation
+        const receipt = await provider.getTransactionReceipt(txHash);
+        if (!receipt || receipt.status !== 1) { // 1 = success
+            console.error(`Tx ${txHash} failed or pending`);
             return false;
         }
-    } else {
-        // TODO: Implement ERC20 decoding for FLX/USDT/BTC(Wrapper)
-        console.warn(`Asset ${expectedAsset} verification not fully implemented, skipping strict check.`);
-    }
 
-    return true;
+        // Validation Logic
+        // 1. Check Recipient (Treasury Wallet or Contract)
+        // For now, we assume a specific treasury address for testing
+        // TODO: Move to Env Variable
+        const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_TREASURY_WALLET || "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+
+        // Note: This logic assumes Native ETH transfer. 
+        // For ERC20 (FLX, USDT), we need to decode the 'transfer' function data.
+
+        if (expectedAsset === 'ETH') {
+            if (tx.to?.toLowerCase() !== TREASURY_ADDRESS.toLowerCase()) {
+                console.error(`Tx recipient mismatch: ${tx.to} != ${TREASURY_ADDRESS}`);
+                return false;
+            }
+
+            const valueEth = parseFloat(ethers.formatEther(tx.value));
+            // Allow small margin of error for float math? No, crypto requires precision.
+            // But for this MVP JS logic:
+            if (Math.abs(valueEth - expectedAmount) > 0.000001) {
+                console.error(`Tx amount mismatch: ${valueEth} != ${expectedAmount}`);
+                return false;
+            }
+        } else {
+            // TODO: Implement ERC20 decoding for FLX/USDT/BTC(Wrapper)
+            console.warn(`Asset ${expectedAsset} verification not fully implemented, skipping strict check.`);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Blockchain verification error:', error);
+        return false;
+    }
 }

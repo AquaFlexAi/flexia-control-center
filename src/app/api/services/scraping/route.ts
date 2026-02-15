@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { ScrapingService } from '@/lib/scraping/service';
 import { authorize } from '@/utils/supabase/auth-check';
+import { ScrapingRequest } from '@/types/service';
 
 export async function POST(request: Request) {
     // RBAC Check & Auth
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
 
     try {
-        const body = await request.json();
+        const body: ScrapingRequest = await request.json();
         const { url, screenshot, waitFor } = body;
 
         if (!url) {
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
         const scraper = ScrapingService.getInstance();
         const result = await scraper.scrape(url, { 
             screenshot: !!screenshot,
-            waitFor: waitFor ? parseInt(waitFor) : 0 
+            waitFor: waitFor ? (typeof waitFor === 'string' ? parseInt(waitFor) : waitFor) : 0 
         });
 
         if (result.error) {

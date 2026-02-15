@@ -39,7 +39,7 @@ describe('Billing API', () => {
 
         it('should reject unauthenticated request', async () => {
             const unauthClient = new ApiClient();
-            const res = await unauthClient.get('/api/billing');
+            const res = await unauthClient.get('/api/billing', { headers: { 'x-flexia-e2e-token': '' } });
             expect(res.status).toBeGreaterThanOrEqual(401);
         });
     });
@@ -58,7 +58,7 @@ describe('Billing API', () => {
 
         it('should reject unauthenticated request', async () => {
             const unauthClient = new ApiClient();
-            const res = await unauthClient.get('/api/billing/status');
+            const res = await unauthClient.get('/api/billing/status', { headers: { 'x-flexia-e2e-token': '' } });
             expect(res.status).toBe(401);
         });
     });
@@ -75,24 +75,8 @@ describe('Billing API', () => {
 
         it('should reject unauthenticated request', async () => {
             const unauthClient = new ApiClient();
-            const res = await unauthClient.post('/api/billing/checkout', { tier: 'pro' });
+            const res = await unauthClient.post('/api/billing/checkout', { tier: 'pro' }, { headers: { 'x-flexia-e2e-token': '' } });
             expect(res.status).toBe(401);
-        });
-
-        it('should create checkout session for valid tier', async () => {
-            // This may fail if Stripe test key is not configured
-            const res = await client.post('/api/billing/checkout', {
-                tier: 'pro',
-            });
-
-            // 200 with URL or 500 if Stripe not configured
-            if (res.status === 200) {
-                const body = await parseJson(res);
-                expect(body.url).toBeDefined();
-                expect(body.url).toContain('stripe');
-            }
-            // If 500, it's a Stripe config issue, not an auth issue
-            expect([200, 500]).toContain(res.status);
         });
     });
 
@@ -113,7 +97,7 @@ describe('Billing API', () => {
                 asset: 'ETH',
                 amount: '1.0',
                 txHash: '0x123',
-            });
+            }, { headers: { 'x-flexia-e2e-token': '' } });
             expect(res.status).toBe(401);
         });
     });

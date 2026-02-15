@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkQuota } from '@/services/billing';
+import { QuotaVerifyResponse } from '@/types/billing';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,7 +16,7 @@ const supabaseAdmin = createClient(
 export async function POST(request: Request) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return NextResponse.json({ allowed: false, error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json<QuotaVerifyResponse>({ allowed: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const apiKey = authHeader.split(' ')[1];
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
             .single();
 
         if (keyError || !keyData) {
-            return NextResponse.json({ allowed: false, error: 'Invalid API Key' }, { status: 403 });
+            return NextResponse.json<QuotaVerifyResponse>({ allowed: false, error: 'Invalid API Key' }, { status: 403 });
         }
 
         const userId = keyData.user_id;
@@ -39,11 +40,11 @@ export async function POST(request: Request) {
         const allowed = await checkQuota(userId, 0); // Check if they can even start a request (0 tokens)
 
         if (!allowed) {
-            return NextResponse.json({ allowed: false, error: 'Monthly quota exceeded' }, { status: 429 });
+            return NextResponse.json<QuotaVerifyResponse>({ allowed: false, error: 'Monthly quota exceeded' }, { status: 429 });
         }
 
-        return NextResponse.json({ allowed: true, userId });
+        return NextResponse.json<QuotaVerifyResponse>({ allowed: true, userId });
     } catch (err: any) {
-        return NextResponse.json({ allowed: false, error: err.message }, { status: 500 });
+        return NextResponse.json<QuotaVerifyResponse>({ allowed: false, error: err.message }, { status: 500 });
     }
 }

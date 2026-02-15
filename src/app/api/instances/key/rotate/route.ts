@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/utils/supabase/server';
 import crypto from 'node:crypto';
 
 // Initialize Admin Client
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    }
-);
+const supabaseAdmin = createAdminClient();
 
 export async function POST(request: Request) {
     try {
@@ -30,13 +21,29 @@ export async function POST(request: Request) {
 
         const { data: keyData, error: authError } = await supabaseAdmin
             .from('instance_api_keys')
-            .select('id, instance_id, is_active')
+            .select(`
+                id, 
+                instance_id, 
+                is_active,
+                deployed_instances!inner (
+                    status
+                )
+            `)
             .eq('key_hash', currentHash)
             .eq('instance_id', instanceId)
             .maybeSingle();
 
         if (authError || !keyData || !keyData.is_active) {
             return NextResponse.json({ error: 'Invalid or inactive API Key' }, { status: 403 });
+        }
+
+        // Check if instance is active
+        // @ts-ignore - Supabase join type inference
+        // Accessing nested property safely
+        const instanceStatus = keyData.deployed_instances?.status;
+        
+        if (instanceStatus !== 'active') {
+             return NextResponse.json({ error: `Instance is ${instanceStatus || 'unknown'}. Rotation denied.` }, { status: 403 });
         }
 
         // 2. Generate New Key

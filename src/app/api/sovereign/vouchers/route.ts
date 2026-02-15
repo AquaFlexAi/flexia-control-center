@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/server";
+import { SovereignVouchersResponse, SovereignVoucherRecord } from "@/types/sovereign";
 
 export async function GET(req: NextRequest) {
     try {
@@ -28,13 +29,13 @@ export async function GET(req: NextRequest) {
             throw error;
         }
 
-        return NextResponse.json({
+        return NextResponse.json<SovereignVouchersResponse>({
             success: true,
-            vouchers: data
+            vouchers: data as SovereignVoucherRecord[]
         });
 
     } catch (error: any) {
         console.error("[Sovereign Vouchers] API Error:", error.message);
-        return NextResponse.json({ error: "Failed to fetch vouchers" }, { status: 500 });
+        return NextResponse.json<SovereignVouchersResponse>({ error: "Failed to fetch vouchers" }, { status: 500 });
     }
 }

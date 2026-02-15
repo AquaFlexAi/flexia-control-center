@@ -43,6 +43,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid batch format. Expected { batchId, events: [] }' }, { status: 400 });
         }
 
+        // VALIDATION: Ensure events are not malformed
+        const validEvents = events.every((e: any) => e.timestamp && (e.input_tokens !== undefined || e.cpu_seconds !== undefined || e.ping));
+        if (!validEvents) {
+            console.warn(`[UsageAPI] Batch ${batchId} contains malformed events.`);
+            return NextResponse.json({ error: 'Malformed events in batch' }, { status: 400 });
+        }
+
         console.log(`[UsageAPI] Received batch ${batchId} for instance ${instanceId} (${events.length} events)`);
 
         // Publish to Kafka for ingestion worker

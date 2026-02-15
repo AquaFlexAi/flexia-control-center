@@ -1,12 +1,13 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
+import { BrandingSettings, BrandingUpdateRequest } from '@/types/branding';
 
 export async function GET() {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('branding_settings')
         .select('*')
-        .single();
+        .single<BrandingSettings>();
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await request.json() as BrandingUpdateRequest;
 
     const { data, error } = await supabase
         .from('branding_settings')
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
         })
         .eq('id', '00000000-0000-0000-0000-000000000000') // Updating the global record
         .select()
-        .single();
+        .single<BrandingSettings>();
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

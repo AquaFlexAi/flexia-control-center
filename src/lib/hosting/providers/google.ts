@@ -115,7 +115,7 @@ export interface GCPNodeConfig {
  * Implements the FlexIA HostingProvider interface for GCP.
  * Uses the Google Cloud Compute Engine API.
  */
-export class GoogleCloudProvider implements HostingProvider {
+export class GoogleCloudProvider implements HostingProvider<GCPNodeConfig> {
     name = 'gcp';
     private config: GCPConfig;
 

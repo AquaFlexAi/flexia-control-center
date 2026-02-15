@@ -15,71 +15,106 @@ export function StakingDashboard({ sub }: StakingDashboardProps) {
 
     return (
         <div className="lg:col-span-2 space-y-8">
-            <GlassCard className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/10 via-transparent to-transparent" />
-                <div className="relative z-10 flex justify-between items-center mb-8">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                            Crypto Staking
-                            <span className="text-[10px] bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded uppercase tracking-wider">
-                                Islamic Compliant
-                            </span>
-                        </h2>
-                        <p className="text-slate-400 mt-2 max-w-lg">
-                            Stake your crypto assets to generate compute credits.
-                            Your assets generate yield that pays for your subscription, adhering to Mudarabah principles.
-                        </p>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-sm text-slate-400 uppercase tracking-widest mb-1">Total Credit Generated</div>
-                        <div className="text-4xl font-mono text-emerald-400 font-bold">
-                            {sub?.staking?.credit?.toLocaleString() || '0'} <span className="text-lg text-emerald-600">FLX</span>
+            <GlassCard className="relative overflow-hidden p-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent pointer-events-none" />
+
+                <div className="relative z-10 p-8">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                                <h2 className="text-2xl font-bold text-white tracking-tight">
+                                    Crypto Staking
+                                </h2>
+                                <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full uppercase tracking-widest">
+                                    Islamic Compliant
+                                </span>
+                            </div>
+                            <p className="text-slate-400 text-sm leading-relaxed max-w-xl">
+                                Stake your crypto assets to generate compute credits.
+                                Your assets generate yield that pays for your subscription, adhering to Mudarabah principles.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col items-start md:items-end">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Total Credit Generated</div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-mono text-emerald-400 font-bold tracking-tighter">
+                                    {sub?.staking?.credit?.toLocaleString() || '0'}
+                                </span>
+                                <span className="text-sm font-bold text-emerald-600 uppercase tracking-widest">FLX</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:h-64">
-                    <AssetsChart assets={stakedAssets} />
+                    {/* Charts Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:h-64">
+                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-slate-800/50 flex flex-col">
+                            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Portfolio Allocation</h4>
+                            <div className="flex-1 flex items-center justify-center min-h-[180px]">
+                                <AssetsChart assets={stakedAssets} />
+                            </div>
+                        </div>
 
-                    <div className="bg-slate-900/30 rounded-xl p-4 border border-slate-800/50 flex flex-col justify-center items-center text-center h-full">
-                        <Activity className="w-12 h-12 text-slate-600 mb-4" />
-                        <p className="text-slate-400 text-sm">Yield History</p>
-                        <p className="text-xs text-slate-600 mt-1">Coming Soon</p>
+                        <div className="bg-slate-900/40 rounded-2xl p-6 border border-slate-800/50 flex flex-col justify-center items-center text-center">
+                            <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mb-4 relative">
+                                <Activity className="w-6 h-6 text-emerald-500" />
+                                <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full" />
+                            </div>
+                            <p className="text-slate-300 text-sm font-semibold">Revenue Share (Mudarabah)</p>
+                            <div className="grid grid-cols-2 gap-4 mt-4 w-full text-left bg-slate-950/30 p-3 rounded-xl border border-slate-800/50">
+                                <div>
+                                    <div className="text-[10px] text-slate-500 uppercase">Available</div>
+                                    <div className="text-emerald-400 font-mono font-bold">{(sub?.revenueRewards?.claimableEth || 0).toFixed(6)} ETH</div>
+                                </div>
+                                <div>
+                                    <div className="text-[10px] text-slate-500 uppercase">Rate</div>
+                                    <div className="text-slate-300 font-mono font-bold">30% Pool</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </GlassCard>
 
             <div className="space-y-4">
-                <h3 className="text-lg font-bold text-slate-300">Active Positions</h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Active Positions</h3>
+                    <span className="text-[10px] text-slate-600 bg-slate-900/50 px-2 py-0.5 rounded border border-slate-800/50">
+                        {stakedAssets.length} Assets
+                    </span>
+                </div>
                 {!stakedAssets.length ? (
-                    <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl text-slate-500">
-                        No assets staked yet. Start staking to earn credits.
+                    <div className="text-center py-16 bg-slate-900/20 border border-dashed border-slate-800/50 rounded-2xl text-slate-500">
+                        <p className="text-sm">No assets staked yet.</p>
+                        <p className="text-xs mt-1">Start staking to earn credits.</p>
                     </div>
                 ) : (
-                    <div className="grid gap-4">
-                        {stakedAssets.map((asset) => (
+                    <div className="grid gap-3">
+                        {stakedAssets.map((asset, index) => (
                             <motion.div
-                                key={asset.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex items-center justify-between"
+                                key={asset.id || `asset-${index}`}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="group bg-slate-900/40 border border-slate-800/50 p-4 rounded-2xl flex items-center justify-between hover:border-indigo-500/30 transition-all"
                             >
                                 <div className="flex items-center gap-4">
                                     <div
-                                        className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg"
-                                        style={{ backgroundColor: ASSET_CONFIG[asset.asset_type]?.color || '#333' }}
+                                        className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-white shadow-lg transition-transform group-hover:scale-105"
+                                        style={{ backgroundColor: ASSET_CONFIG[(asset.asset_type || '').toUpperCase()]?.color || '#333' }}
                                     >
-                                        {asset.asset_type.substring(0, 1)}
+                                        {(asset.asset_type || '').charAt(0).toUpperCase() || '?'}
                                     </div>
                                     <div>
-                                        <div className="font-bold text-slate-200">{asset.asset_type}</div>
-                                        <div className="text-xs text-slate-500">Entry: ${asset.entry_price_usd.toLocaleString()}</div>
+                                        <div className="font-bold text-slate-200 group-hover:text-white transition-colors">{(asset.asset_type || 'Unknown').toUpperCase()}</div>
+                                        <div className="text-[10px] text-slate-500 font-mono">Entry: ${asset.entry_price_usd != null ? asset.entry_price_usd.toLocaleString() : '0'}</div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-mono text-lg text-white">{asset.amount}</div>
-                                    <div className="text-xs text-emerald-500 font-medium">Active • Yielding {ASSET_CONFIG[asset.asset_type]?.yield || '0%'}</div>
+                                    <div className="font-mono text-lg text-white font-bold">{asset.amount}</div>
+                                    <div className="flex items-center gap-2 justify-end">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <div className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Active • {ASSET_CONFIG[(asset.asset_type || '').toUpperCase()]?.yield || '0%'} Yield</div>
+                                    </div>
                                 </div>
                             </motion.div>
                         ))}

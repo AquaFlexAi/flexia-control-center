@@ -23,4 +23,18 @@ export interface SubscriptionData {
             is_active: boolean;
         }>;
     };
+    genesis?: {
+        eligible: boolean;
+        badge: boolean;
+        points: number;
+    };
+    sovereignRewards?: {
+        flaBalance: number;
+        lifetimeFlaEarned: number;
+        tasksCompleted: number;
+        aiReputation: number;
+    };
+    revenueRewards?: {
+        claimableEth: number;
+    };
 }

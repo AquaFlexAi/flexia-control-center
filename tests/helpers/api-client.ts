@@ -19,6 +19,7 @@ const traceLog: TraceEntry[] = [];
 export class ApiClient {
     private cookies: string[] = [];
     private accessToken: string | null = null;
+    private userId: string | null = null;
 
     /**
      * Login as a specific role and cache session
@@ -34,6 +35,10 @@ export class ApiClient {
         // Store access token for subsequent requests
         if (body.session?.access_token) {
             this.accessToken = body.session.access_token;
+        }
+
+        if (body.user?.id) {
+            this.userId = body.user.id;
         }
 
         // Extract cookies from response
@@ -85,8 +90,13 @@ export class ApiClient {
             'X-Trace-ID': traceId,
             'X-Span-ID': spanId,
             'X-Test-Run': 'true',
+            'x-flexia-e2e-token': 'flexia-dev-bypass',
             ...extraHeaders,
         };
+
+        if (this.userId) {
+            headers['x-flexia-user-id'] = this.userId;
+        }
 
         // Attach auth
         if (this.accessToken) {

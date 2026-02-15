@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import deployments from '@/lib/blockchain/deployments.json';
 import { createAdminClient } from '@/utils/supabase/server';
 import { checkPermission } from '@/utils/rbac-server';
+import { SovereignVoteRequest, SovereignVoteResponse } from '@/types/sovereign';
 
 const COUNCIL_ABI = [
     "function castVote(uint256 proposalId, bool support) external"
@@ -15,11 +16,11 @@ export async function POST(req: Request) {
         // Note: In production, users should sign with their own wallets (MetaMask).
         // This MVP API uses the system wallet for automated governance or admin overrides.
 
-        const body = await req.json();
+        const body: SovereignVoteRequest = await req.json();
         const { proposalId, support } = body;
 
         if (proposalId === undefined || support === undefined) {
-            return NextResponse.json({ error: "Missing proposalId or support" }, { status: 400 });
+            return NextResponse.json<SovereignVoteResponse>({ error: "Missing proposalId or support" }, { status: 400 });
         }
 
         const provider = getJsonRpcProvider();
@@ -32,9 +33,9 @@ export async function POST(req: Request) {
         const tx = await council.castVote(proposalId, support);
         console.log(`[Council API] Vote cast: ${tx.hash}`);
 
-        return NextResponse.json({ success: true, txHash: tx.hash });
+        return NextResponse.json<SovereignVoteResponse>({ success: true, txHash: tx.hash });
     } catch (error: any) {
         console.error("[Council API] Vote error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json<SovereignVoteResponse>({ error: error.message }, { status: 500 });
     }
 }

@@ -3,7 +3,7 @@ title: "API Reference"
 description: "Comprehensive API reference for the FlexIA platform, including endpoints for services, instances, and sovereign network."
 keywords: ["api", "endpoints", "rest", "reference", "documentation"]
 category: "API"
-last_updated: "2026-02-13"
+last_updated: "2026-02-14"
 ---
 
 # API Reference Guide
@@ -43,6 +43,7 @@ This reference documents the 44+ endpoints available in the Control Center.
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
 | `/sovereign/stats` | GET | Returns global network stats (TPS, Active Miners, Total Staked). |
+| `/sovereign/proposals` | GET | Returns a list of governance proposals. |
 | `/sovereign/vouchers` | GET | Returns a list of earned/redeemable vouchers for the current miner. |
 | `/sovereign/voucher` | POST | **(Authority Only)** Signs an inference voucher for a valid task. |
 | `/cron/mining-epoch` | POST | Triggers the Oracle to calculate and mint pending rewards. |
@@ -66,8 +67,9 @@ This reference documents the 44+ endpoints available in the Control Center.
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `/billing/status` | GET | Returns current subscription and credit balance. |
+| `/billing/status` | GET | Returns current subscription, credit balance, and blockchain rewards (FLA/ETH). |
 | `/billing/checkout` | POST | Creates a Stripe checkout session for credit top-up. |
+| `/billing/stake` | POST | Verifies an on-chain staking transaction and updates credit balance. |
 | `/usage/verify-quota` | POST | Checks if a user has sufficient credits for an action. |
 | `/instances/usage/batch` | POST | Processes a batch of usage reports from distributed miners. |
 
@@ -81,4 +83,3 @@ This reference documents the 44+ endpoints available in the Control Center.
 | `/webhooks/stripe` | POST | Handles incoming Stripe webhooks. |
 | `/faucet` | POST | (Devnet Only) Requests test FLX tokens. |
 | `/docs` | GET | Returns the documentation tree structure. |
-

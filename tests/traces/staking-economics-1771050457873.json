@@ -1,0 +1,130 @@
+{
+  "suite": "staking-economics",
+  "timestamp": "2026-02-14T06:27:37.873Z",
+  "summary": {
+    "total": 5,
+    "passed": 1,
+    "failed": 4,
+    "avgDuration": 83
+  },
+  "traces": [
+    {
+      "traceId": "94e038f0-e420-4e8a-8696-1ec0bd7bd615",
+      "spanId": "5016260b-95ae-4a",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "durationMs": 212,
+      "timestamp": "2026-02-14T06:27:37.647Z",
+      "requestHeaders": {
+        "X-Trace-ID": "94e038f0-e420-4e8a-8696-1ec0bd7bd615",
+        "X-Span-ID": "5016260b-95ae-4a",
+        "X-Test-Run": "true",
+        "x-flexia-e2e-token": "flexia-dev-bypass",
+        "Content-Type": "application/json",
+        "Authorization": ""
+      },
+      "responseHeaders": {
+        "content-encoding": "gzip",
+        "content-type": "application/json;charset=utf-8",
+        "date": "Sat, 14 Feb 2026 06:27:36 GMT",
+        "transfer-encoding": "chunked",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+      }
+    },
+    {
+      "traceId": "e2ec8ebc-68d9-4899-97fa-ea502864aac7",
+      "spanId": "e3d85d46-3df9-45",
+      "method": "GET",
+      "url": "/api/billing/status",
+      "status": 401,
+      "durationMs": 56,
+      "timestamp": "2026-02-14T06:27:37.718Z",
+      "requestHeaders": {
+        "X-Trace-ID": "e2ec8ebc-68d9-4899-97fa-ea502864aac7",
+        "X-Span-ID": "e3d85d46-3df9-45",
+        "X-Test-Run": "true",
+        "x-flexia-e2e-token": "flexia-dev-bypass",
+        "Authorization": "[REDACTED]"
+      },
+      "responseHeaders": {
+        "content-encoding": "gzip",
+        "content-type": "application/json;charset=utf-8",
+        "date": "Sat, 14 Feb 2026 06:27:36 GMT",
+        "transfer-encoding": "chunked",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+      }
+    },
+    {
+      "traceId": "4a406802-0001-4996-aa48-e2b80d5e7d3e",
+      "spanId": "b00b5bcd-f6fc-46",
+      "method": "POST",
+      "url": "/api/billing/stake",
+      "status": 401,
+      "durationMs": 56,
+      "timestamp": "2026-02-14T06:27:37.779Z",
+      "requestHeaders": {
+        "X-Trace-ID": "4a406802-0001-4996-aa48-e2b80d5e7d3e",
+        "X-Span-ID": "b00b5bcd-f6fc-46",
+        "X-Test-Run": "true",
+        "x-flexia-e2e-token": "flexia-dev-bypass",
+        "Authorization": "[REDACTED]",
+        "Content-Type": "application/json"
+      },
+      "responseHeaders": {
+        "content-encoding": "gzip",
+        "content-type": "application/json;charset=utf-8",
+        "date": "Sat, 14 Feb 2026 06:27:36 GMT",
+        "transfer-encoding": "chunked",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+      }
+    },
+    {
+      "traceId": "30cafd5c-e838-431c-bdcf-372d8d63a777",
+      "spanId": "9f02194f-5355-41",
+      "method": "POST",
+      "url": "/api/billing/stake",
+      "status": 401,
+      "durationMs": 44,
+      "timestamp": "2026-02-14T06:27:37.824Z",
+      "requestHeaders": {
+        "X-Trace-ID": "30cafd5c-e838-431c-bdcf-372d8d63a777",
+        "X-Span-ID": "9f02194f-5355-41",
+        "X-Test-Run": "true",
+        "x-flexia-e2e-token": "flexia-dev-bypass",
+        "Authorization": "[REDACTED]",
+        "Content-Type": "application/json"
+      },
+      "responseHeaders": {
+        "content-encoding": "gzip",
+        "content-type": "application/json;charset=utf-8",
+        "date": "Sat, 14 Feb 2026 06:27:36 GMT",
+        "transfer-encoding": "chunked",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+      }
+    },
+    {
+      "traceId": "ad02b802-91e7-423f-9460-9a6491068b9a",
+      "spanId": "17e7ac57-0896-40",
+      "method": "GET",
+      "url": "/api/billing/status",
+      "status": 401,
+      "durationMs": 45,
+      "timestamp": "2026-02-14T06:27:37.872Z",
+      "requestHeaders": {
+        "X-Trace-ID": "ad02b802-91e7-423f-9460-9a6491068b9a",
+        "X-Span-ID": "17e7ac57-0896-40",
+        "X-Test-Run": "true",
+        "x-flexia-e2e-token": "flexia-dev-bypass",
+        "Authorization": "[REDACTED]"
+      },
+      "responseHeaders": {
+        "content-encoding": "gzip",
+        "content-type": "application/json;charset=utf-8",
+        "date": "Sat, 14 Feb 2026 06:27:36 GMT",
+        "transfer-encoding": "chunked",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding"
+      }
+    }
+  ]
+}

@@ -3,20 +3,23 @@ import { authorize } from '@/utils/supabase/auth-check';
 import { API_ROUTE_CONFIG } from '@/config/api-permissions';
 import { createAdminClient } from '@/utils/supabase/server';
 import { getContainerName, getDockerInstance } from '@/lib/docker';
+import { ConsoleExecRequest, ConsoleExecResponse } from '@/types/console';
 
 export async function POST(request: Request) {
   const { authorized, response } = await authorize(API_ROUTE_CONFIG['/api/console/exec'].POST!);
   if (!authorized) return response!;
 
-  const { serviceId, instanceId, cmd } = await request.json();
+  const body = await request.json();
+  const { serviceId, instanceId, cmd } = body as ConsoleExecRequest;
+  
   if (!serviceId || !cmd || !Array.isArray(cmd) || cmd.length === 0) {
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid payload' } as ConsoleExecResponse, { status: 400 });
   }
 
   const supabase = await createAdminClient();
   const { data: service } = await supabase.from('services').select('name').eq('id', serviceId).single();
   if (!service) {
-    return NextResponse.json({ error: 'Service not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Service not found' } as ConsoleExecResponse, { status: 404 });
   }
 
   const containerName = instanceId || getContainerName(service.name, 0);
@@ -37,8 +40,8 @@ export async function POST(request: Request) {
       stream.on('error', (err: any) => reject(err));
     });
 
-    return NextResponse.json({ output });
+    return NextResponse.json({ output } as ConsoleExecResponse);
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'exec failed' }, { status: 500 });
+    return NextResponse.json({ error: err?.message || 'exec failed' } as ConsoleExecResponse, { status: 500 });
   }
 }

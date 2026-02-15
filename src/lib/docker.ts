@@ -2,6 +2,18 @@ import Docker from 'dockerode';
 import { ComputeNode } from './hosting/types';
 import fs from 'fs';
 
+export interface DockerContainerInfo {
+    Id: string;
+    Names: string[];
+    Image: string;
+    State: string;
+    Status: string;
+    NetworkSettings?: {
+        Networks: Record<string, { IPAddress: string }>;
+    };
+    Ports?: { PrivatePort: number; PublicPort?: number }[];
+}
+
 // Cache for Docker clients: NodeID -> DockerInstance
 const dockerClients: Record<string, Docker> = {};
 // Cache for the working local socket path or host string
@@ -312,7 +324,7 @@ export async function createContainer(config: {
 }
 
 // List running containers
-export async function listContainers(node?: ComputeNode): Promise<any[]> {
+export async function listContainers(node?: ComputeNode): Promise<DockerContainerInfo[]> {
     let docker = getDockerInstance(node);
     const isLocal = !node;
 

@@ -10,6 +10,7 @@ import {
 } from '@/lib/docker';
 import { authorize } from '@/utils/supabase/auth-check';
 import { verifyImageIntegrity, getImageId } from '@/lib/security';
+import { ServiceDeployRequest } from '@/types/service';
 
 export async function POST(request: Request) {
     // RBAC Check & Auth
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
-    const body = await request.json();
+    const body: ServiceDeployRequest = await request.json();
     const { serviceId, image, env, ports, volumes, instanceCount = 1, nodeId } = body;
 
     if (!serviceId || !image) {

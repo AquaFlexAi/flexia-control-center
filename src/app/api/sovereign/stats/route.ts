@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import deployments from '@/lib/blockchain/deployments.json';
 import { createAdminClient } from '@/utils/supabase/server';
 import { getConfigValue } from '@/lib/vault';
+import { SovereignStatsResponse, SovereignMiner } from '@/types/sovereign';
 
 const REGISTRY_ABI = [
     "function totalMiners() view returns (uint256)",
@@ -22,7 +23,7 @@ export async function GET() {
         const supabase = createAdminClient();
 
         const totalMiners = await registry.totalMiners();
-        const miners = [];
+        const miners: SovereignMiner[] = [];
         let totalStaked = BigInt(0);
         let totalReputation = 0;
 
@@ -63,7 +64,7 @@ export async function GET() {
 
         const rewardsBalance = await provider.getBalance((deployments as any).rewardsHub || ethers.ZeroAddress);
 
-        return NextResponse.json({
+        return NextResponse.json<SovereignStatsResponse>({
             totalMiners: Number(totalMiners),
             totalStaked: ethers.formatEther(totalStaked),
             avgReputation: totalMiners > 0 ? (totalReputation / Number(totalMiners)).toFixed(1) : 0,
@@ -86,17 +87,31 @@ export async function GET() {
         if (error.message.includes('BAD_DATA') || error.message.includes('could not decode result data')) {
             const code = await provider.getCode(deployments.registry);
             if (code === '0x') {
-                return NextResponse.json({
+                return NextResponse.json<SovereignStatsResponse>({
                     error: "Contract not found",
-                    details: `No bytecode found at address ${deployments.registry} on ${rpcUrl}. Contracts may need redeployment.`
+                    details: `No bytecode found at address ${deployments.registry} on ${rpcUrl}. Contracts may need redeployment.`,
+                    totalMiners: 0,
+                    totalStaked: "0",
+                    avgReputation: 0,
+                    rewardsPool: "0",
+                    pendingRewards: 0,
+                    totalProcessed: 0,
+                    miners: []
                 }, { status: 500 });
             }
         }
 
-        return NextResponse.json({
+        return NextResponse.json<SovereignStatsResponse>({
             error: "Failed to fetch Sovereign Network stats",
             details: error.message,
-            rpcUrl
+            rpcUrl,
+            totalMiners: 0,
+            totalStaked: "0",
+            avgReputation: 0,
+            rewardsPool: "0",
+            pendingRewards: 0,
+            totalProcessed: 0,
+            miners: []
         }, { status: 500 });
     }
 }

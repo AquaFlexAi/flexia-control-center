@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HostingManager } from '@/lib/hosting/services/manager';
+import { ProviderAccount, HostingAccountPostRequest } from '@/types/hosting';
 
 export async function GET(
     req: NextRequest,
@@ -11,7 +12,7 @@ export async function GET(
         const configs = await manager.getProviderConfigs(id);
 
         // Return safe data
-        const accounts = configs.map(c => ({
+        const accounts: ProviderAccount[] = configs.map(c => ({
             id: c.id,
             name: c.credentials.name || `Account ${c.id.slice(0, 4)}`, // Fallback or convention
             providerId: c.providerId,
@@ -32,7 +33,7 @@ export async function POST(
     try {
         const { id } = await params;
         const body = await req.json();
-        const { name, credentials } = body;
+        const { name, credentials } = body as HostingAccountPostRequest;
 
         if (!credentials) {
             return NextResponse.json({ error: 'Credentials are required' }, { status: 400 });
@@ -48,12 +49,15 @@ export async function POST(
         const manager = new HostingManager();
         const config = await manager.saveProviderConfig(id, payload);
 
-        return NextResponse.json({
+        const account: ProviderAccount = {
             id: config.id,
             name: payload.name,
             providerId: config.providerId,
-            isActive: config.isActive
-        });
+            isActive: config.isActive,
+            createdAt: config.createdAt
+        };
+
+        return NextResponse.json(account);
     } catch (error: any) {
         console.error('Failed to save account:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

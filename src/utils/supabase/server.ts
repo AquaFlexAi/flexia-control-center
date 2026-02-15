@@ -13,13 +13,51 @@ export async function createClient() {
 
     const authHeader = headerStore?.get('authorization')
     const e2eHeader = headerStore?.get('x-flexia-e2e-token')
+    const e2eUserId = headerStore?.get('x-flexia-user-id')
 
     // E2E Test Bypass: Use Service Role Key if header present
     if (process.env.NODE_ENV === 'development' && e2eHeader === 'flexia-dev-bypass') {
         const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-        return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
-            cookies: { getAll() { return [] }, setAll() { } }
+        const client = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+            cookies: {
+                getAll() {
+                    return cookieStore.getAll()
+                },
+                setAll(cookiesToSet: any[]) {
+                    try {
+                        cookiesToSet.forEach(({ name, value, options }) =>
+                            cookieStore.set(name, value, options)
+                        )
+                    } catch (error) {
+                    }
+                },
+            },
+            global: {
+                headers: {
+                    Authorization: `Bearer ${key}`,
+                    apikey: key,
+                }
+            }
         });
+
+        if (e2eUserId) {
+            (client.auth as any).getUser = async () => {
+                return {
+                    data: {
+                        user: {
+                            id: e2eUserId,
+                            role: 'authenticated',
+                            aud: 'authenticated',
+                            app_metadata: { role: 'authenticated' },
+                            user_metadata: { role: 'owner' } // Mocking as owner for test flow
+                        }
+                    },
+                    error: null
+                };
+            };
+        }
+
+        return client;
     }
 
     const requestHeaders: Record<string, string> = {};

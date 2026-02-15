@@ -85,7 +85,7 @@ export interface HetznerNodeConfig {
     start_after_create?: boolean;
 }
 
-export class HetznerProvider implements HostingProvider {
+export class HetznerProvider implements HostingProvider<HetznerNodeConfig> {
     name = 'hetzner';
     private apiToken: string;
     private baseUrl = 'https://api.hetzner.cloud/v1';

@@ -30,5 +30,12 @@ export const API_ROUTE_CONFIG: Record<string, {
     },
     '/api/console/exec': {
         POST: 'manage_services'
+    },
+    '/api/billing/admin/stats': {
+        GET: 'billing:view_all'
+    },
+    '/api/billing/admin/users': {
+        GET: 'billing:view_all',
+        PATCH: 'billing:manage_all'
     }
 };

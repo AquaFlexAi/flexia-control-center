@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { authorize } from "@/utils/supabase/auth-check";
 import { API_ROUTE_CONFIG } from "@/config/api-permissions";
+import { TelemetryHistoryResponse, TelemetryRequest, TelemetryMetric } from '@/types/telemetry';
+import { DockerContainerInfo } from '@/lib/docker';
 
 export async function GET(request: Request) {
     const { authorized, response } = await authorize(API_ROUTE_CONFIG['/api/telemetry'].GET!);
@@ -20,13 +22,13 @@ export async function GET(request: Request) {
             .single();
 
         if (!serviceRow) {
-             return NextResponse.json({ serviceId, history: [] });
+             return NextResponse.json<TelemetryHistoryResponse>({ serviceId, history: [] });
         }
 
         if (serviceRow) {
             const { listContainers, getContainerName } = await import('@/lib/docker');
             const runningContainers = await listContainers();
-            const containerSet = new Set(runningContainers.map((c: any) => c.Names[0].replace('/', '')));
+            const containerSet = new Set(runningContainers.map((c: DockerContainerInfo) => c.Names[0].replace('/', '')));
             let runningCount = 0;
             // Use nullish coalescing to allow 0 instances
             const targetInstances = serviceRow.instances ?? 1;
@@ -38,7 +40,7 @@ export async function GET(request: Request) {
             
             // If supposed to be running but no containers found, return empty
             if (runningCount === 0) {
-                return NextResponse.json({ serviceId, history: [] });
+                return NextResponse.json<TelemetryHistoryResponse>({ serviceId, history: [] });
             }
         }
     }
@@ -52,30 +54,14 @@ export async function GET(request: Request) {
         .limit(20);
 
     if (data && data.length > 0) {
-        return NextResponse.json({
-            serviceId,
-            history: data.reverse()
+        return NextResponse.json<TelemetryHistoryResponse>({
+            serviceId: serviceId || '',
+            history: data.reverse() as any // Cast because DB types vs interface might differ slightly on optional fields
         });
     }
 
-    // Fallback to generator if no real data yet (service must be online to reach here)
-    /* 
-    const generateData = () => {
-        const data = [];
-        const now = Date.now();
-        for (let i = 20; i >= 0; i--) {
-            data.push({
-                recorded_at: new Date(now - i * 60000).toISOString(),
-                value: Math.floor(Math.random() * 40) + 10,
-                tokens: Math.floor(Math.random() * 500) + 100
-            });
-        }
-        return data;
-    };
-    */
-
-    return NextResponse.json({
-        serviceId,
+    return NextResponse.json<TelemetryHistoryResponse>({
+        serviceId: serviceId || '',
         history: [] // Return empty if no real data found, instead of fake data
     });
 }
@@ -85,7 +71,7 @@ export async function POST(request: Request) {
     if (!authorized) return response!;
 
     const supabase = await createClient();
-    const { serviceId, metricType, value } = await request.json();
+    const { serviceId, metricType, value }: TelemetryRequest = await request.json();
 
     // 1. Insert Telemetry
     const { error: telemetryError } = await supabase

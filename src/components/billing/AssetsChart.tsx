@@ -12,10 +12,13 @@ interface AssetsChartProps {
 }
 
 export function AssetsChart({ assets }: AssetsChartProps) {
-    const chartData = assets.map(a => ({
-        name: a.asset_type,
-        value: parseFloat(a.amount.toString()) * (a.asset_type === 'BTC' ? 65000 : a.asset_type === 'ETH' ? 3500 : 1)
-    }));
+    const chartData = assets.map(a => {
+        const assetName = (a.asset_type || 'Unknown').toUpperCase();
+        return {
+            name: assetName,
+            value: parseFloat(a.amount.toString()) * (assetName === 'BTC' ? 65000 : assetName === 'ETH' ? 3500 : 1)
+        };
+    });
 
     if (chartData.length === 0) chartData.push({ name: 'Empty', value: 1 });
 

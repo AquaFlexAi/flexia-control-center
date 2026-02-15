@@ -30,7 +30,7 @@ async function handleProxy(req: Request, { params }: { params: { serviceId: stri
 
         // List containers to find the IP of the target instance
         const containers = await listContainers();
-        const targetContainer = containers.find((c: any) =>
+        const targetContainer = containers.find((c) =>
             c.Names.some((n: string) => n.replace('/', '') === instanceId) ||
             c.Id.startsWith(instanceId)
         );
@@ -51,7 +51,7 @@ async function handleProxy(req: Request, { params }: { params: { serviceId: stri
 
         if (isDev) {
             // Find mapped port for 3000
-            const portMapping = targetContainer.Ports?.find((p: any) => p.PrivatePort === internalPort);
+            const portMapping = targetContainer.Ports?.find((p) => p.PrivatePort === internalPort);
             if (portMapping && portMapping.PublicPort) {
                 targetUrl = `http://localhost:${portMapping.PublicPort}/${path.join('/')}${queryString ? `?${queryString}` : ''}`;
                 console.log(`[Proxy] Dev mode: forwarding to localhost:${portMapping.PublicPort}`);

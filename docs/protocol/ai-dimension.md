@@ -29,9 +29,14 @@ To ensure Shariah-compliant "Payments for Work," every inference interaction gen
 
 ## 3. Verification & Settle
 FlexIA uses a **Hybrid Optimistic Verification** model:
-- **Instant Payment**: Vouchers are gathered by the miner and submitted to the `SovereignRewards` contract for immediate settlement in FLA.
+- **Instant Payment**: Vouchers are gathered by the miner and submitted to the `SovereignAIDimension` contract for immediate settlement in **FLA** (Sovereign AI Token).
 - **Asynchronous Auditing**: The **Auditor Service** randomly samples 1% of vouchers and re-runs the inference on a "Quality Oracle" node.
-- **Slashing**: If the oracle result deviates significantly from the voucher's result-hash, the miner's stake is slashed on-chain.
+- **Slashing**: If the oracle result deviates significantly from the voucher's result-hash, the miner's stake in the `MinerRegistry` is slashed on-chain.
+
+### Rewards Structure
+- **Miner Reward**: 80% minted directly in FLA.
+- **R&D Contribution**: 10% sent to the Protocol Treasury.
+- **Genesis Bonus**: 10% multiplier for holders of the [Genesis Badge](file:///c:/Users/mrcha/OneDrive/Desktop/APP_DEV/FlexAi/flexia-control-center/docs/economics/genesis-system.md).
 
 ## 4. Hardware Integrity
 Verification is bolstered by **Hardware Attestation**.

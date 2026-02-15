@@ -3,12 +3,14 @@ import { authorize } from '@/utils/supabase/auth-check';
 import { API_ROUTE_CONFIG } from '@/config/api-permissions';
 import { createAdminClient } from '@/utils/supabase/server';
 import { getContainerName, getDockerInstance } from '@/lib/docker';
+import { ServiceHealthCheckRequest, ServiceHealthCheckResponse } from '@/types/service';
 
 export async function POST(request: Request) {
   const { authorized, response } = await authorize(API_ROUTE_CONFIG['/api/services/health-check'].POST!);
   if (!authorized) return response!;
 
-  const { serviceId, instanceId } = await request.json();
+  const body: ServiceHealthCheckRequest = await request.json();
+  const { serviceId, instanceId } = body;
   if (!serviceId) return NextResponse.json({ error: 'Missing serviceId' }, { status: 400 });
 
   const supabase = await createAdminClient();
@@ -21,12 +23,15 @@ export async function POST(request: Request) {
     const info = await docker.getContainer(containerName).inspect();
     const isRunning = !!info?.State?.Running;
     const health = info?.State?.Health?.Status || (isRunning ? 'healthy' : 'offline');
-    return NextResponse.json({
+    
+    const responseData: ServiceHealthCheckResponse = {
       container: containerName,
       isRunning,
       health,
       state: info.State
-    });
+    };
+    
+    return NextResponse.json(responseData);
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Health check failed' }, { status: 500 });
   }

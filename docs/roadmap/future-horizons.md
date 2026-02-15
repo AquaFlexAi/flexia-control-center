@@ -1,30 +1,31 @@
+# 🌌 Future Horizons: FlexAI Evolution (Phases 9-12)
+
+This document outlines the strategic vision for FlexIA beyond the Revenue Hub, focusing on full decentralization and the autonomous AI economy.
+
+## Phase 9: Decentralized Governance (Q1 2027)
+**Goal**: Transition control of the protocol parameters to the community.
+- **Sovereign Council**: Mobile-native interface for voting on protocol upgrades, profit ratios, and mediator appointments.
+- **On-Chain Proposals**: Implementation of a customized Governor contract (Mudarabah-compatible) where voting power is weighted by FLX stake and Reputation.
+- **Mediator Network**: Deployment of the first 100 high-reputation nodes to act as observers and dispute resolvers.
+
+## Phase 10: The Autonomous AI Economy (Q3 2027)
+**Goal**: Enable AI agents to trade resources and intelligence without human intervention.
+- **Agent-to-Agent (A2A) Payments**: Micro-payment channels for sub-millisecond settlement of inference tasks.
+- **Dynamic Resource Pricing**: Market-driven pricing for GPU/RAM based on global supply/demand in the mesh.
+- **Autonomous Subsidies**: Programmable protocol incentives that auto-adjust to fund under-resourced AI models (e.g., altruistic research models).
+
+## Phase 11: DePIN Hardware & Edge Optimization (2028)
+**Goal**: Bridging the gap between software and physical infrastructure.
+- **FlexIA Miner Firmware**: Custom OS/Firmware optimized for NVIDIA Jetson and dedicated ASIC miners.
+- **Proof of Useful Work (PoUW)**: Transition from heartbeat-based uptime to verifiable proof that the node executed a legitimate AI task.
+- **Zero-Knowledge Usage**: Integration of ZK-proofs to verify task completion without revealing the underlying data or model weights (Privacy-first).
+
+## Phase 12: The Global Sovereign Mesh
+**Goal**: Planetary-scale deployment of decentralized intelligence.
+- **Satellite Integration**: Low-latency P2P bridges for remote areas via Starlink/Satellite constellations.
+- **Sovereign Internet Protocols**: Implementation of a decentralized DNS and storage layer fully integrated into the FlexAI Mobile experience.
+
 ---
-title: "Future Horizons: Ubiquity & Scale"
-description: "Strategic vision for Phase 6 (Mobile Sovereignty) and Phase 7 (Autonomous Scaling)."
-category: "Roadmap"
----
 
-# Future Horizons: Ubiquity & Scale
-
-## 1. Phase 6: Mobile Sovereignty
-The FlexIA vision concludes with the miniaturization of the sovereign node, allowing decentralized AI to operate on billions of mobile devices.
-
-### A. Lite-Node Architecture
-- **WebAssembly (WASM)** target for the `ai-router-service`, allowing it to run within mobile browsers or native apps.
-- **Optimized P2P**: Low-energy libp2p configurations for mobile edge-relays.
-
-### B. Mobile-Native Rewards
-- Mobile nodes earn micro-rewards for acting as **Privacy Relays** and **Local Cache Nodes** for AI inference, effectively turning every smartphone into a remunerated part of the global mesh.
-
-## 2. Phase 7: Autonomous Scaling & Marketplace
-The final phase achieves full protocol autonomy, where the network governs itself through code.
-
-### A. Dynamic Pricing Marketplace
-- Exit nodes and Miners set their own prices in a competitive marketplace.
-- The **Protocol Broker** automatically balances traffic based on User-Policies (e.g., "Cheapest and Shariah-compliant" vs. "Lowest-latency and High-reputation").
-
-### B. Decentralized Governance (DAO)
-- Transition from "SaaS-managed" updates to a full **On-Chain DAO** where FLX holders vote on dimensional parameters, slashing thresholds, and Mudarabah ratios.
-
-## 3. The Vision: The Autonomous Web
-At this stage, FlexIA operates as an invisible, ethical layer for the internet—where AI is private, compute is fair, and economic value is distributed justly across the global contributors.
+> [!IMPORTANT]
+> This roadmap reflects the long-term vision of the project. Each phase's details are subject to change based on community governance (Phase 9+).
