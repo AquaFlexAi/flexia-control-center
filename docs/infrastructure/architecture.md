@@ -27,6 +27,12 @@ The immutable ledger that governs long-term trust and economic distribution.
 - **Smart Contracts**: Sovereign Hyper-Hub, Miner Registry, and Reward Pools.
 - **Identity Proofs**: Hardware Attestation signatures are anchored here to prevent "Sybil-Inference" attacks.
 
+### D. The Ingress Layer (Zero Trust Gateway)
+The entry point for administrative and external traffic, ensuring no ports are exposed to the public internet.
+- **Provider**: Cloudflare Zero Trust (Tunnels).
+- **Controller**: **Traefik** routing traffic to internal services (Control Center, RPC, etc.).
+- **Security**: Automated public-IP whitelisting and Email/IP-based Access Policies.
+
 ## 2. Global Data Flow (Inference Lifecycle)
 1. **Request Ingress**: Client submits a task to the Control Center or a local AI Router.
 2. **Dynamic Selection**: The AI Router queries the DHT for a miner with the requisite capability (e.g., Llama-3-70B on 48GB VRAM).

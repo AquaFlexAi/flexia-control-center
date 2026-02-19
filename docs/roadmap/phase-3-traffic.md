@@ -16,7 +16,12 @@ To transition the network from manual node connections to a decentralized, capab
 
 ## 3. Implementation Milestones
 
-### A. Capability Advertising (DHT Pods)
+### A. Zero Trust Ingress (Cloudflare Tunnels)
+[COMPLETE] Transition from exposed ports to authenticated tunnel-based entry.
+- **Automation**: `./flexia.sh setup-ingress` for seamless DNS management and IP whitelisting.
+- **Vault Integration**: Deterministic storage of tunnel secrets for multi-host recovery.
+
+### B. Capability Advertising (DHT Pods)
 Nodes broadcast signed capability records to the DHT.
 - **Key**: `/flexia/resource/[DIMENSION]/[PEER_ID]`
 - **Value**: Signed JSON containing hardware attestation hashes and model availability (e.g., "Llama-3-70B").

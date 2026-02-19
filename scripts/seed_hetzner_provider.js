@@ -1,3 +1,4 @@
+// DEPRECATED: Use scripts/reset-and-seed.ts instead
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });

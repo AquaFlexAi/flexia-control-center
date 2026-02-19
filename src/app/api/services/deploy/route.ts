@@ -11,6 +11,8 @@ import {
 import { authorize } from '@/utils/supabase/auth-check';
 import { verifyImageIntegrity, getImageId } from '@/lib/security';
 import { ServiceDeployRequest } from '@/types/service';
+import { HostingManager } from '@/lib/hosting/services/manager';
+import { getDockerInstance } from '@/lib/docker';
 
 export async function POST(request: Request) {
     // RBAC Check & Auth
@@ -37,12 +39,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Service not found' }, { status: 404 });
     }
 
+
     // Optional: Fetch Node info if nodeId is provided (for remote deploy)
     let targetNode = undefined;
     if (nodeId) {
-        // Fetch node config from DB (mocked here as we don't have the table yet)
-        // const { data: node } = await supabase.from('nodes').select('*').eq('id', nodeId).single();
-        // targetNode = node;
+        const infra = await authorize('manage_infrastructure');
+        if (!infra.authorized) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Fetch node config from DB
+        const manager = new HostingManager();
+        const node = await manager.getNode(nodeId);
+        if (node) {
+            const connectionConfig = await manager.getNodeConnection(nodeId);
+            targetNode = { ...node, connectionConfig };
+            console.log(`[Deploy] Targeted remote node: ${node.name} (${node.ipAddress})`);
+        } else {
+            console.warn(`[Deploy] Requested nodeId ${nodeId} not found, falling back to local.`);
+        }
     }
 
     try {

@@ -42,6 +42,7 @@ export default function ServicesPage() {
     });
 
     const { loading: roleLoading, can } = usePermission();
+    const canInfra = can('manage_infrastructure');
 
     // Derived State for Filters (Hooks must be before any early returns)
     const uniqueTypes = useMemo(() => Array.from(new Set(services.map(s => s.type))).filter(Boolean).sort(), [services]);
@@ -104,15 +105,17 @@ export default function ServicesPage() {
                             >
                                 Fleet
                             </button>
-                            <button
-                                onClick={() => setViewMode('infrastructure')}
-                                className={cn(
-                                    "px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
-                                    viewMode === 'infrastructure' ? "bg-white/10 text-white shadow-lg" : "text-muted-foreground hover:text-white"
-                                )}
-                            >
-                                Nodes
-                            </button>
+                            {canInfra && (
+                                <button
+                                    onClick={() => setViewMode('infrastructure')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
+                                        viewMode === 'infrastructure' ? "bg-white/10 text-white shadow-lg" : "text-muted-foreground hover:text-white"
+                                    )}
+                                >
+                                    Nodes
+                                </button>
+                            )}
                         </div>
                         <button
                             onClick={() => setShowLaunchWizard(true)}
@@ -128,7 +131,7 @@ export default function ServicesPage() {
                 <GlobalStatsHeader services={services} />
             </div>
 
-            {viewMode === 'services' ? (
+            {viewMode === 'services' || !canInfra ? (
                 <>
                     <ServiceFiltersToolbar
                         statusFilter={statusFilter}

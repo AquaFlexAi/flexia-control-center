@@ -24,8 +24,9 @@ import { usePermission } from "@/hooks/usePermission";
 
 const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/", permission: 'view_dashboard' },
-    { icon: Boxes, label: "Services", href: "/services", permission: 'manage_services' },
-    { icon: Server, label: "Instances", href: "/instances", permission: 'view_dashboard' },
+    { icon: Boxes, label: "Services", href: "/services", permission: 'view_services' },
+    { icon: Server, label: "Routers", href: "/routers", permission: 'view_analytics' },
+    { icon: Server, label: "Infrastructure", href: "/infrastructure", permission: 'manage_infrastructure' },
     { icon: BarChart3, label: "Usage", href: "/usage", permission: 'view_dashboard' },
     { icon: Globe, label: "Network", href: "/sovereign", permission: 'view_dashboard' },
     { icon: BookOpen, label: "Docs", href: "/docs", permission: 'view_dashboard' },
@@ -33,7 +34,7 @@ const menuItems = [
     { icon: ClipboardList, label: "Planning", href: "/planning", permission: 'view_settings' },
     { icon: ShieldCheck, label: "Security", href: "/security", permission: 'view_settings' },
     { icon: Terminal, label: "Logs", href: "/logs", permission: 'view_logs' },
-    { icon: CreditCard, label: "Billing", href: "/billing", permission: 'view_billing' },
+    { icon: CreditCard, label: "Market", href: "/market", permission: 'view_billing' },
     { icon: Settings, label: "Settings", href: "/settings", permission: 'view_settings' },
 ];
 

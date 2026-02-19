@@ -11,8 +11,10 @@ import { verifySignature, getRegistrationMessage } from '@/lib/web3';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
+        console.log("[Register API] Received Body Keys:", Object.keys(body));
+        console.log("[Register API] Body Dump:", JSON.stringify(body, null, 2));
         const { inviteToken, name, provider, region, version, signature, walletAddress, timestamp, serviceId } = body;
-        
+
         // Cast and validate config
         const config = body.config as InstanceConfig;
 
@@ -42,11 +44,11 @@ export async function POST(request: Request) {
                 authMethod = 'wallet';
                 // Store wallet in config
                 if (!config.ownerWallet) config.ownerWallet = walletAddress;
-                
+
                 // VALIDATION: Hardware Attestation for Miners
                 if (!config.hardware && process.env.NODE_ENV === 'production') {
-                     // In prod, warn or reject. For now, we log warning to allow transition.
-                     console.warn(`[Register] Miner ${walletAddress} missing hardware attestation.`);
+                    // In prod, warn or reject. For now, we log warning to allow transition.
+                    console.warn(`[Register] Miner ${walletAddress} missing hardware attestation.`);
                 }
             } else {
                 return NextResponse.json({ error: 'Invalid wallet signature' }, { status: 401 });
@@ -74,6 +76,24 @@ export async function POST(request: Request) {
                 const admin = users.find(u => u.email === 'test@flexia.ai');
                 if (admin) ownerId = admin.id;
             }
+        }
+
+        const { data: memberOrg } = ownerId ? await supabaseAdmin
+            .from('organization_members')
+            .select('org_id')
+            .eq('user_id', ownerId)
+            .maybeSingle() : { data: null };
+
+        const { data: defaultOrg } = await supabaseAdmin
+            .from('organizations')
+            .select('id')
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+        const orgId = memberOrg?.org_id || defaultOrg?.id;
+        if (!orgId) {
+            return NextResponse.json({ error: 'No organization available for registration' }, { status: 500 });
         }
 
         // 2. Generate Credentials
@@ -107,7 +127,8 @@ export async function POST(request: Request) {
                 config: config || {},
                 status: 'active',
                 last_heartbeat_at: new Date().toISOString(),
-                owner_id: ownerId
+                owner_id: ownerId,
+                org_id: orgId
             });
 
         if (instError) {

@@ -7,7 +7,7 @@ describe('Orchestration POST', () => {
       createClient: vi.fn(async () => ({
         from: (table: string) => ({
           select: () => ({
-            eq: () => ({ single: () => ({ data: { id: 'svc_1', name: 'UnknownService', status: 'offline' } }) })
+            eq: () => ({ single: () => ({ data: { id: 'svc_1', name: 'UnknownService', status: 'offline', type: 'custom' } }) })
           }),
           update: () => ({ eq: () => ({}) }),
           insert: () => ({})
@@ -15,14 +15,13 @@ describe('Orchestration POST', () => {
       }))
     }));
     vi.mock('@/lib/docker', () => ({
-      getDockerInstance: vi.fn(() => ({
-        getContainer: vi.fn(() => ({
-          inspect: vi.fn(async () => { throw { statusCode: 404 }; })
-        }))
-      })),
       SERVICE_DEFAULTS: {},
       SERVICE_CONTAINER_MAP: {},
-      createContainer: vi.fn()
+      inspectContainerState: vi.fn(async () => ({ Missing: true, Running: false })),
+      createContainer: vi.fn(),
+      startContainer: vi.fn(),
+      stopContainer: vi.fn(),
+      restartContainer: vi.fn()
     }));
     vi.mock('@/utils/supabase/auth-check', () => ({
       authorize: vi.fn(async () => ({ authorized: true, response: null, user: { id: 'u1' } }))

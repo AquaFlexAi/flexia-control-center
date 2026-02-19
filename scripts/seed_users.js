@@ -1,3 +1,4 @@
+// DEPRECATED: Use scripts/reset-and-seed.ts instead
 
 require('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
@@ -19,7 +20,10 @@ const users = [
     { name: 'FlexIA Owner', email: 'test@flexia.ai', role: 'owner', password: 'password123' },
     // Essential Test Accounts for E2E
     { name: 'Test Owner', email: 'test-owner@flexai.test', role: 'owner', password: 'password123' },
-    { name: 'Test Admin', email: 'test-admin@flexai.test', role: 'admin', password: 'password123' }
+    { name: 'Test Admin', email: 'test-admin@flexai.test', role: 'admin', password: 'password123' },
+    // Custom Users
+    { name: 'Hamid', email: 'mkb.hamid@gmail.com', role: 'owner', password: 'password123' },
+    { name: 'M. Charif', email: 'mrcharifmakaoui@gmail.com', role: 'system_admin', password: 'password123' }
 ];
 
 async function seedUsers() {

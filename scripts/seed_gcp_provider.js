@@ -1,3 +1,4 @@
+// DEPRECATED: Use scripts/reset-and-seed.ts instead
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 const fs = require('fs');

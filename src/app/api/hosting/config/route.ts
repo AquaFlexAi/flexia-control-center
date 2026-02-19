@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server';
 import { HostingManager } from '@/lib/hosting';
-import { SafeProviderConfig, HostingConfigPostRequest, ProviderConfig } from '@/types/hosting';
+import { SafeProviderConfig, HostingConfigPostRequest } from '@/types/hosting';
+import { authorize } from '@/utils/supabase/auth-check';
 
 const manager = new HostingManager();
 
+function maskSecret(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    if (!value) return undefined;
+    if (value === '******') return value;
+    const last4 = value.slice(-4);
+    return `****${last4}`;
+}
+
 export async function GET(req: Request) {
+    const { authorized, response } = await authorize('manage_infrastructure');
+    if (!authorized) return response!;
+
     try {
         const { searchParams } = new URL(req.url);
         const providerId = searchParams.get('providerId');
@@ -20,9 +32,9 @@ export async function GET(req: Request) {
             credentials: {
                 ...config.credentials,
                 // Mask sensitive fields
-                serviceAccountKey: config.credentials.serviceAccountKey ? '******' : undefined,
-                private_key: config.credentials.private_key ? '******' : undefined,
-                apiToken: config.credentials.apiToken ? '******' : undefined,
+                serviceAccountKey: maskSecret(config.credentials.serviceAccountKey),
+                private_key: maskSecret(config.credentials.private_key),
+                apiToken: maskSecret(config.credentials.apiToken),
                 // Keep non-sensitive
                 projectId: config.credentials.projectId,
                 zone: config.credentials.zone,
@@ -37,6 +49,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+    const { authorized, response } = await authorize('manage_infrastructure');
+    if (!authorized) return response!;
+
     try {
         const body = await req.json();
         const { providerId, credentials, id } = body as HostingConfigPostRequest;
@@ -58,13 +73,28 @@ export async function POST(req: Request) {
         }
 
         const result = await manager.saveProviderConfig(providerId, finalCredentials, id);
-        return NextResponse.json(result as ProviderConfig);
+        const safeResult: SafeProviderConfig = {
+            ...result,
+            credentials: {
+                ...result.credentials,
+                serviceAccountKey: maskSecret(result.credentials.serviceAccountKey),
+                private_key: maskSecret(result.credentials.private_key),
+                apiToken: maskSecret(result.credentials.apiToken),
+                projectId: result.credentials.projectId,
+                zone: result.credentials.zone,
+                accountName: result.credentials.accountName,
+            }
+        };
+        return NextResponse.json(safeResult);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
 export async function DELETE(req: Request) {
+    const { authorized, response } = await authorize('manage_infrastructure');
+    if (!authorized) return response!;
+
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');

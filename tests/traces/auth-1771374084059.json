@@ -1,0 +1,11 @@
+{
+  "suite": "auth",
+  "timestamp": "2026-02-18T00:21:24.052Z",
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "avgDuration": 0
+  },
+  "traces": []
+}

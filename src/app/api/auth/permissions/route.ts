@@ -23,11 +23,19 @@ export async function GET() {
         const { data: member } = await supabase
             .from('organization_members')
             .select('role')
+            .eq('user_id', user.id)
+            .maybeSingle<OrganizationMember>();
+
+        const { data: memberByEmail } = !member && user.email ? await supabase
+            .from('organization_members')
+            .select('role')
             .eq('email', user.email)
-            .single<OrganizationMember>();
+            .maybeSingle<OrganizationMember>() : { data: null };
         
         if (member) {
             role = member.role;
+        } else if (memberByEmail) {
+            role = memberByEmail.role;
         }
     }
 

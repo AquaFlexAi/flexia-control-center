@@ -16,6 +16,8 @@ export interface Service {
     id: string;
     name: string;
     type: string;
+    service_kind?: string;
+    slug?: string;
     run_mode: 'dev' | 'prod';
     status: 'online' | 'offline' | 'transitioning' | 'deploying' | null;
     pending_action?: string;
@@ -37,6 +39,7 @@ export interface Service {
     env_vars?: Record<string, string>;
     ports?: Record<string, string>;
     volumes?: string[];
+    org_id?: string;
 }
 
 export type ServiceAction = 'start' | 'stop' | 'restart';
@@ -91,6 +94,8 @@ export interface ServiceCreateRequest {
     name: string;
     image: string;
     type?: string;
+    service_kind?: string;
+    slug?: string;
     run_mode?: 'dev' | 'prod';
     instances?: number;
     region?: string;

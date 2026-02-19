@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
+import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_DETAILS, ROLE_LABELS } from '../src/utils/rbac';
 
 // Force immediate output
 const log = (msg: string) => console.log(msg);
@@ -27,7 +28,9 @@ const SEED_USERS = [
     { name: 'System Admin', email: 'admin@flexia.io', role: 'system_admin', password: 'password123' },
     { name: 'FlexIA Owner', email: 'test@flexia.ai', role: 'owner', password: 'password123' },
     { name: 'Test Owner', email: 'test-owner@flexai.test', role: 'owner', password: 'password123' },
-    { name: 'Test Admin', email: 'test-admin@flexai.test', role: 'admin', password: 'password123' }
+    { name: 'Test Admin', email: 'test-admin@flexai.test', role: 'admin', password: 'password123' },
+    { name: 'Hamid', email: 'mkb.hamid@gmail.com', role: 'owner', password: 'password123' },
+    { name: 'M. Charif', email: 'mrcharifmakaoui@gmail.com', role: 'system_admin', password: 'password123' }
 ];
 
 const HOSTING_PROVIDERS = [
@@ -37,41 +40,87 @@ const HOSTING_PROVIDERS = [
 ];
 
 const DEFAULT_SERVICES = [
-    { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Agent Zero Swarm', type: 'cluster', image: 'flexia-agent-zero:latest', region: 'local' },
-    { id: '550e8400-e29b-41d4-a716-446655440002', name: 'OpenCode IDE', type: 'ide', image: 'flexia-opencode:latest', region: 'local' },
-    { id: '550e8400-e29b-41d4-a716-446655440003', name: 'AI Router Service', type: 'router', image: 'flexia-ai-router:latest', region: 'local' }
+    {
+        id: '550e8400-e29b-41d4-a716-446655440001',
+        name: 'Agent Zero',
+        type: 'worker',
+        service_kind: 'agent_zero',
+        slug: 'flexia-agent-zero',
+        image: 'flexia/agent-zero:latest',
+        region: 'local'
+    },
+    {
+        id: '550e8400-e29b-41d4-a716-446655440002',
+        name: 'OpenCode IDE',
+        type: 'api',
+        service_kind: 'opencode',
+        slug: 'flexia-opencode',
+        image: 'flexia/opencode:latest',
+        region: 'local'
+    },
+    {
+        id: '550e8400-e29b-41d4-a716-446655440003',
+        name: 'AI Router',
+        type: 'api',
+        service_kind: 'ai_router',
+        slug: 'flexia-ai-router',
+        image: 'ai-router-service:latest',
+        region: 'local'
+    }
 ];
 
-// RBAC Baseline
-const ROLES = {
-    SYSTEM_ADMIN: 'system_admin',
-    OWNER: 'owner',
-    ADMIN: 'admin',
-    DEVELOPER: 'developer',
-};
-
-const ROLE_LABELS: Record<string, string> = {
-    system_admin: 'System Admin',
-    owner: 'Owner',
-    admin: 'Admin',
-    developer: 'Developer',
-};
+const PERMISSIONS = Object.entries(PERMISSION_DETAILS).map(([key, val]) => ({
+    key,
+    description: val.description,
+    module: val.module
+}));
 
 async function deleteTable(tableName: string) {
     log(`   🗑️  Clearing ${tableName}...`);
     try {
-        // Try multiple filter strategies
-        const { error: err1 } = await supabase.from(tableName).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        if (err1) {
-            const { error: err2 } = await supabase.from(tableName).delete().neq('email', 'NONE');
-            if (err2) {
-                await supabase.from(tableName).delete().neq('name', 'NONE');
+        // Try multiple filter strategies to clear table
+        const { error } = await supabase.from(tableName).delete().neq('key', 'NONE'); // For lookup tables
+        if (error) {
+            const { error: idErr } = await supabase.from(tableName).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // For UUID tables
+            if (idErr) {
+                await supabase.from(tableName).delete().neq('org_id', '00000000-0000-0000-0000-000000000000'); // For org tables
             }
         }
         log(`   ✅ Table ${tableName} reset.`);
     } catch (e: any) {
+        // Ignore errors if table doesn't exist
+        if (e.message?.includes('does not exist')) return;
         log(`   ⚠️  Warning clearing ${tableName}: ${e.message}`);
     }
+}
+
+async function ensureDefaultOrg(): Promise<{ id: string }> {
+    const { data: existing, error: existingError } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('name', 'Default Organization')
+        .maybeSingle();
+
+    if (existingError && existingError.code === '42P01') {
+        throw new Error('Missing organizations table. Apply migrations before running seed.');
+    }
+
+    const orgId = existing?.id
+        ? existing.id
+        : (await supabase
+            .from('organizations')
+            .insert({ name: 'Default Organization' })
+            .select('id')
+            .single()).data!.id;
+
+    await supabase.from('organization_credits').upsert({
+        org_id: orgId,
+        balance: 0,
+        tier: 'starter',
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'org_id' });
+
+    return { id: orgId };
 }
 
 async function main() {
@@ -81,28 +130,46 @@ async function main() {
     try {
         // 1. CLEANUP
         log('\nPhase 1: Cleanup');
+        // Delete in order of dependencies (child first)
         const tables = [
             'instance_usage_events', 'instance_api_keys', 'deployed_instances',
-            'services', 'organization_members', 'hosting_providers',
-            'role_permissions', 'roles', 'permissions'
+            'organization_members', 'services', 'hosting_providers',
+            'transactions', 'organization_credits', 'organizations',
+            'role_permissions', 'permissions', 'roles' // RBAC last
         ];
         for (const t of tables) await deleteTable(t);
 
-        // 2. RBAC
-        log('\nPhase 2: RBAC');
-        // This part is complex, for simplicity we'll just log and rely on migrations if it fails
-        // But let's try basic role sync
+        // 2. RBAC - ROLES & PERMISSIONS
+        log('\nPhase 2: Seeding RBAC Definitions');
+
+        // Roles
         for (const [key, name] of Object.entries(ROLE_LABELS)) {
-            await supabase.from('roles').upsert({ key, name }, { onConflict: 'key' });
+            const { error } = await supabase.from('roles').upsert({
+                key,
+                name,
+                description: `Role for ${name}`
+            }, { onConflict: 'key' });
+            if (error) log(`   ❌ Error upserting role ${key}: ${error.message}`);
         }
-        log('✅ Roles synced.');
+        log('   ✅ Roles synced.');
+
+        // Permissions
+        for (const perm of PERMISSIONS) {
+            const { error } = await supabase.from('permissions').upsert(perm, { onConflict: 'key' });
+            if (error) log(`   ❌ Error upserting permission ${perm.key}: ${error.message}`);
+        }
+        log('   ✅ Permissions synced.');
+
 
         // 3. PROVIDERS & SERVICES
         log('\nPhase 3: Seeding Providers & Services');
+        const org = await ensureDefaultOrg();
         for (const p of HOSTING_PROVIDERS) await supabase.from('hosting_providers').upsert(p, { onConflict: 'name' });
         for (const s of DEFAULT_SERVICES) await supabase.from('services').upsert({
             ...s,
-            status: 'online',
+            org_id: org.id,
+            status: 'offline',
+            pending_action: null,
             last_deployed: new Date().toISOString()
         }, { onConflict: 'id' });
         log('✅ Providers & Services seeded.');
@@ -113,6 +180,7 @@ async function main() {
         for (const user of SEED_USERS) {
             const found = users.find(u => u.email === user.email);
             const wallet = user.role === 'owner' ? DEV_DEPLOYER_WALLET : undefined;
+            let userId = found?.id;
 
             if (found) {
                 await supabase.auth.admin.updateUserById(found.id, {
@@ -120,28 +188,37 @@ async function main() {
                     user_metadata: { role: user.role, wallet_address: wallet }
                 });
             } else {
-                await supabase.auth.admin.createUser({
+                const created = await supabase.auth.admin.createUser({
                     email: user.email,
                     password: user.password,
                     email_confirm: true,
                     user_metadata: { role: user.role, wallet_address: wallet }
                 });
+                userId = created.data.user?.id;
             }
             await supabase.from('organization_members').upsert({
-                email: user.email, name: user.name, role: user.role, joined_at: new Date().toISOString()
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                joined_at: new Date().toISOString(),
+                user_id: userId,
+                org_id: org.id
             }, { onConflict: 'email' });
             log(`   ✅ User ${user.email} synced.`);
         }
 
-        // 5. RBAC PERMISSIONS (Critical)
-        log('\nPhase 5: Seeding RBAC Permissions');
-        const { execSync } = require('child_process');
-        try {
-            execSync('bun scripts/seed_rbac.ts', { stdio: 'inherit', cwd: process.cwd() });
-            log('✅ RBAC Permissions synced.');
-        } catch (e: any) {
-            log(`❌ Failed to seed RBAC permissions: ${e.message}`);
+        // 5. RBAC PERMISSIONS (LINKS)
+        log('\nPhase 5: Linking RBAC Permissions');
+
+        for (const [roleKey, permKeys] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+            
+            const rows = permKeys.map(pk => ({ role_key: roleKey, permission_key: pk }));
+            if (rows.length > 0) {
+                const { error } = await supabase.from('role_permissions').upsert(rows, { onConflict: 'role_key,permission_key' });
+                if (error) log(`   ❌ Error linking permissions for ${roleKey}: ${error.message}`);
+            }
         }
+        log('✅ RBAC Permissions linked.');
 
         log('\n🎉 SEEDING COMPLETE 🎉');
     } catch (err: any) {

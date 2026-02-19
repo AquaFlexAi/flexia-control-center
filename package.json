@@ -18,6 +18,8 @@
     "test:auth": "vitest run tests/api/auth.test.ts",
     "test:e2e": "vitest run tests/api/",
     "seed:test": "bun scripts/reset-and-seed.ts"
+    ,
+    "test:docker": "bun scripts/test_docker_tls.ts"
   },
   "dependencies": {
     "@opentelemetry/exporter-trace-otlp-http": "^0.212.0",

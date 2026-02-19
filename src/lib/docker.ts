@@ -1,6 +1,8 @@
 import Docker from 'dockerode';
 import { ComputeNode } from './hosting/types';
 import fs from 'fs';
+import path from 'path';
+import type { ServiceKind } from './service-resolver';
 
 export interface DockerContainerInfo {
     Id: string;
@@ -18,6 +20,9 @@ export interface DockerContainerInfo {
 const dockerClients: Record<string, Docker> = {};
 // Cache for the working local socket path or host string
 let discoveredLocalConnection: { socketPath?: string; host?: string; port?: number } | null = null;
+let lastLocalDockerFailureAt = 0;
+let lastLocalDockerFailureLogAt = 0;
+let lastLocalDockerFallbackLogAt = 0;
 
 /**
  * Get a Docker instance. 
@@ -36,8 +41,58 @@ export function getDockerInstance(node?: ComputeNode): Docker {
             if (dockerHost.startsWith('ssh://')) {
                 dockerClients[key] = new Docker({ protocol: 'ssh', host: dockerHost.replace('ssh://', '') });
             } else if (dockerHost.startsWith('tcp://') || dockerHost.startsWith('http')) {
+                const isTcp = dockerHost.startsWith('tcp://');
                 const url = new URL(dockerHost.replace('tcp://', 'http://'));
-                dockerClients[key] = new Docker({ host: url.hostname, port: url.port || 2375 });
+                const certPath = process.env.DOCKER_CERT_PATH;
+                // Relaxed check: If certPath is provided, we try to use it for TLS
+                const tlsVerify = (process.env.DOCKER_TLS_VERIFY || '').toString() === '1' || !!certPath;
+
+                console.log(`[Docker] Debug Info - Host: ${dockerHost}, CertPath: ${certPath}, Verify: ${tlsVerify}, ENV_VERIFY: ${process.env.DOCKER_TLS_VERIFY}`);
+
+                if (tlsVerify && certPath) {
+                    const certDir = path.isAbsolute(certPath) ? certPath : path.resolve(process.cwd(), certPath);
+                    const skipHostnameVerify = (process.env.DOCKER_TLS_SKIP_HOSTNAME_VERIFY || '').toString() === '1';
+
+                    const readFirst = (paths: string[]) => {
+                        for (const p of paths) {
+                            try {
+                                return fs.readFileSync(p);
+                            } catch { }
+                        }
+                        throw new Error(`Missing TLS file. Tried: ${paths.join(', ')}`);
+                    };
+                    const readIfExists = (p: string) => {
+                        try {
+                            return fs.readFileSync(p);
+                        } catch {
+                            return undefined;
+                        }
+                    };
+                    const caChain = [
+                        readIfExists(path.join(certDir, 'ca.pem'))
+                    ].filter(Boolean) as Buffer[];
+                    const options: Docker.DockerOptions = {
+                        protocol: 'https',
+                        host: url.hostname,
+                        port: parseInt(url.port || '2376', 10),
+                        ca: caChain.length > 0 ? caChain : undefined,
+                        cert: readFirst([path.join(certDir, 'cert.pem'), path.join(certDir, 'client-cert.pem')]),
+                        key: readFirst([path.join(certDir, 'key.pem'), path.join(certDir, 'client-key.pem')]),
+                        checkServerIdentity: skipHostnameVerify ? (() => undefined) : undefined
+                    } as any;
+                    const saved = process.env.DOCKER_CERT_PATH;
+                    try {
+                        delete process.env.DOCKER_CERT_PATH;
+                        dockerClients[key] = new Docker(options);
+                    } finally {
+                        if (saved != null) process.env.DOCKER_CERT_PATH = saved;
+                    }
+                } else {
+                    dockerClients[key] = new Docker({
+                        host: url.hostname,
+                        port: parseInt(url.port || (isTcp ? '2375' : '2375'), 10)
+                    });
+                }
             } else {
                 dockerClients[key] = new Docker({ socketPath: dockerHost });
             }
@@ -74,6 +129,7 @@ export function getDockerInstance(node?: ComputeNode): Docker {
                 options.ca = fs.readFileSync(credentials.caPath);
                 options.cert = fs.readFileSync(credentials.certPath);
                 options.key = fs.readFileSync(credentials.keyPath);
+                options.protocol = 'https';
             }
 
             dockerClients[key] = new Docker(options);
@@ -105,7 +161,11 @@ export function getDockerInstance(node?: ComputeNode): Docker {
 export const SERVICE_CONTAINER_MAP: Record<string, string> = {
     'OpenCode IDE': 'flexia-opencode',
     'Agent Zero Cluster': 'flexia-agent-zero',
-    'AI Router Swarm': 'flexia-ai-router'
+    'Agent Zero Swarm': 'flexia-agent-zero',
+    'Agent Zero': 'flexia-agent-zero',
+    'AI Router Swarm': 'flexia-ai-router',
+    'AI Router Service': 'flexia-ai-router',
+    'AI Router': 'flexia-ai-router'
 };
 
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -114,14 +174,21 @@ const TAG = IS_DEV ? 'dev' : 'latest';
 // Helper to determine host address for containers
 const HOST_ADDRESS = process.platform === 'linux' ? '172.17.0.1' : 'host.docker.internal';
 
-export const SERVICE_DEFAULTS: Record<string, {
+export const SERVICE_KIND_CONTAINER_MAP: Partial<Record<ServiceKind, string>> = {
+    opencode: 'flexia-opencode',
+    agent_zero: 'flexia-agent-zero',
+    ai_router: 'flexia-ai-router',
+    blockchain: 'flexia-blockchain'
+};
+
+export const SERVICE_KIND_DEFAULTS: Partial<Record<ServiceKind, {
     image: string,
     ports?: Record<string, string>,
     env?: Record<string, string>,
     description?: string,
     type?: string
-}> = {
-    'OpenCode IDE': {
+}>> = {
+    opencode: {
         image: `flexia/opencode:${TAG}`,
         ports: { '8080': '8080' }, // Host:Container
         env: {
@@ -130,7 +197,7 @@ export const SERVICE_DEFAULTS: Record<string, {
         },
         type: 'api'
     },
-    'Agent Zero Cluster': {
+    agent_zero: {
         image: `flexia/agent-zero:${TAG}`,
         ports: { '8081': '80' },
         env: {
@@ -140,7 +207,7 @@ export const SERVICE_DEFAULTS: Record<string, {
         },
         type: 'worker'
     },
-    'AI Router Swarm': {
+    ai_router: {
         image: 'ai-router-service:latest',
         ports: { '8082': '3000' }, // Standardize on 8082 for the main swarm node
         env: {
@@ -151,12 +218,29 @@ export const SERVICE_DEFAULTS: Record<string, {
         },
         type: 'router'
     },
-    'FlexIA Blockchain': {
+    blockchain: {
         image: 'flexia-blockchain:latest',
         ports: { '8545': '8545', '30303': '30303' },
         type: 'infrastructure',
         description: 'Decentralized Oracle & Rewards Ledger'
     }
+};
+
+export const SERVICE_DEFAULTS: Record<string, {
+    image: string,
+    ports?: Record<string, string>,
+    env?: Record<string, string>,
+    description?: string,
+    type?: string
+}> = {
+    'OpenCode IDE': SERVICE_KIND_DEFAULTS.opencode!,
+    'Agent Zero Cluster': SERVICE_KIND_DEFAULTS.agent_zero!,
+    'AI Router Swarm': SERVICE_KIND_DEFAULTS.ai_router!,
+    'FlexIA Blockchain': SERVICE_KIND_DEFAULTS.blockchain!,
+    'Agent Zero Swarm': SERVICE_KIND_DEFAULTS.agent_zero!,
+    'Agent Zero': SERVICE_KIND_DEFAULTS.agent_zero!,
+    'AI Router Service': SERVICE_KIND_DEFAULTS.ai_router!,
+    'AI Router': SERVICE_KIND_DEFAULTS.ai_router!
 };
 
 export function getContainerName(serviceName: string, index: number = 0): string {
@@ -251,6 +335,7 @@ export async function createContainer(config: {
     binds?: string[]; // ["/host:/container"]
 }, node?: ComputeNode): Promise<void> {
     const docker = getDockerInstance(node);
+    let imageToUse = config.image;
 
     // Convert env map to array ["KEY=VAL"]
     const Env = config.env
@@ -272,24 +357,33 @@ export async function createContainer(config: {
         });
     }
 
-    console.log(`[Docker][${node?.name || 'Local'}] Creating container ${config.name} from ${config.image}`);
+    console.log(`[Docker][${node?.name || 'Local'}] Creating container ${config.name} from ${imageToUse}`);
 
     // Ensure image exists
     try {
-        const image = docker.getImage(config.image);
+        const image = docker.getImage(imageToUse);
         await image.inspect();
     } catch (err: any) {
         if (err.statusCode === 404) {
             // Check if it's a local image that we shouldn't pull
-            const localOnlyImages = ['ai-router-service', 'flexia-blockchain', 'flexia-opencode', 'flexia-agent-zero'];
-            const isLocal = localOnlyImages.some(name => config.image.startsWith(name));
+            const localOnlyImages = ['ai-router-service', 'flexia-blockchain', 'flexia/opencode', 'flexia/agent-zero'];
+            const isLocal = localOnlyImages.some(name => imageToUse.startsWith(name));
 
             if (!isLocal) {
-                await pullImage(config.image, node);
+                await pullImage(imageToUse, node);
             } else {
-                console.warn(`[Docker] Local image ${config.image} not found. Skipping pull for local-only image.`);
-                // We let it fail downstream if it really doesn't exist, 
-                // but we avoid trying to pull 'ai-router-service' from Docker Hub.
+                if (imageToUse.endsWith(':dev')) {
+                    const fallback = imageToUse.replace(/:dev$/, ':latest');
+                    try {
+                        const img = docker.getImage(fallback);
+                        await img.inspect();
+                        imageToUse = fallback;
+                    } catch { }
+                }
+
+                if (imageToUse === config.image) {
+                    console.warn(`[Docker] Local image ${imageToUse} not found. Skipping pull for local-only image.`);
+                }
             }
         }
     }
@@ -312,7 +406,7 @@ export async function createContainer(config: {
     }
 
     const container = await docker.createContainer({
-        Image: config.image,
+        Image: imageToUse,
         name: config.name,
         Env,
         ExposedPorts,
@@ -325,10 +419,17 @@ export async function createContainer(config: {
 
 // List running containers
 export async function listContainers(node?: ComputeNode): Promise<DockerContainerInfo[]> {
-    let docker = getDockerInstance(node);
     const isLocal = !node;
 
+    if (isLocal && process.platform === 'win32' && !discoveredLocalConnection) {
+        const now = Date.now();
+        if (now - lastLocalDockerFailureAt < 10_000) {
+            return [];
+        }
+    }
+
     try {
+        const docker = getDockerInstance(node);
         const containers = await docker.listContainers({ all: false });
 
         // If successful and local on Windows, cache the connection info
@@ -342,6 +443,14 @@ export async function listContainers(node?: ComputeNode): Promise<DockerContaine
 
         return containers;
     } catch (err: any) {
+        if (isLocal && process.platform === 'win32') {
+            lastLocalDockerFailureAt = Date.now();
+            if (Date.now() - lastLocalDockerFailureLogAt > 30_000) {
+                console.error(`[Docker] Failed to list containers: ${err.message}`);
+                lastLocalDockerFailureLogAt = Date.now();
+            }
+        }
+
         // If it's the local node and we're on Windows, try fallback connections
         if (isLocal && process.platform === 'win32' && !discoveredLocalConnection) {
             const connections = [
@@ -356,7 +465,10 @@ export async function listContainers(node?: ComputeNode): Promise<DockerContaine
 
             for (const conn of connections) {
                 try {
-                    console.log(`[Docker] Attempting fallback: ${JSON.stringify(conn)}`);
+                    if (Date.now() - lastLocalDockerFallbackLogAt > 30_000) {
+                        console.log(`[Docker] Attempting fallback: ${JSON.stringify(conn)}`);
+                        lastLocalDockerFallbackLogAt = Date.now();
+                    }
                     const fallbackDocker = new Docker(conn);
                     const containers = await fallbackDocker.listContainers({ all: false });
 
@@ -374,7 +486,10 @@ export async function listContainers(node?: ComputeNode): Promise<DockerContaine
         // --- FINAL FALLBACK: Native CLI Bridge ---
         // This is useful if Bun/Library has trouble with pipes even if they exist.
         try {
-            console.log('[Docker] Pipe/TCP failed. Attempting Native CLI Bridge...');
+            if (!isLocal || Date.now() - lastLocalDockerFallbackLogAt > 30_000) {
+                console.log('[Docker] Pipe/TCP failed. Attempting Native CLI Bridge...');
+                if (isLocal) lastLocalDockerFallbackLogAt = Date.now();
+            }
             const { execSync } = require('child_process');
             const output = execSync('docker ps --format "{{json .}}" --no-trunc', { encoding: 'utf8' });
             const lines = output.trim().split('\n').filter(Boolean);
@@ -388,13 +503,18 @@ export async function listContainers(node?: ComputeNode): Promise<DockerContaine
                     Status: parsed.Status
                 };
             });
-            console.log(`[Docker] Native CLI Bridge found ${containers.length} containers.`);
+            if (!isLocal || Date.now() - lastLocalDockerFailureLogAt > 30_000) {
+                console.log(`[Docker] Native CLI Bridge found ${containers.length} containers.`);
+                if (isLocal) lastLocalDockerFailureLogAt = Date.now();
+            }
             return containers;
         } catch (cliErr) {
-            console.error('[Docker] Native CLI Bridge also failed.');
+            if (!isLocal || Date.now() - lastLocalDockerFailureLogAt > 30_000) {
+                console.error('[Docker] Native CLI Bridge also failed.');
+                if (isLocal) lastLocalDockerFailureLogAt = Date.now();
+            }
         }
 
-        console.error(`[Docker] Failed to list containers: ${err.message}`);
         return [];
     }
 }

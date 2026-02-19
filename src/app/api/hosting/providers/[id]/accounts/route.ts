@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HostingManager } from '@/lib/hosting/services/manager';
 import { ProviderAccount, HostingAccountPostRequest } from '@/types/hosting';
+import { authorize } from '@/utils/supabase/auth-check';
 
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const { authorized, response } = await authorize('manage_infrastructure');
+    if (!authorized) return response!;
+
     try {
         const { id } = await params;
         const manager = new HostingManager();
@@ -30,6 +34,9 @@ export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const { authorized, response } = await authorize('manage_infrastructure');
+    if (!authorized) return response!;
+
     try {
         const { id } = await params;
         const body = await req.json();

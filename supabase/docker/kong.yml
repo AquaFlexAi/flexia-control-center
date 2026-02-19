@@ -12,3 +12,9 @@ services:
     routes:
       - paths:
           - /rest/v1
+
+  - name: realtime
+    url: http://realtime:4000
+    routes:
+      - paths:
+          - /realtime/v1

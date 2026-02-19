@@ -14,6 +14,8 @@ const TEMPLATES = [
         name: 'AI Router',
         description: 'Centralized AI Gateway',
         type: 'api',
+        service_kind: 'ai_router',
+        slug: 'flexia-ai-router',
         image: 'ai-router-service:latest',
         icon: Globe,
         defaultPorts: { '8082': '3000' },
@@ -24,6 +26,8 @@ const TEMPLATES = [
         name: 'Agent Zero',
         description: 'Autonomous Agent Framework',
         type: 'worker',
+        service_kind: 'agent_zero',
+        slug: 'flexia-agent-zero',
         image: 'flexia/agent-zero:latest',
         icon: Cpu,
         defaultPorts: { '8081': '80' }
@@ -33,6 +37,8 @@ const TEMPLATES = [
         name: 'FlexIA Blockchain',
         description: 'Decentralized Oracle & Rewards Ledger',
         type: 'infrastructure',
+        service_kind: 'blockchain',
+        slug: 'flexia-blockchain',
         image: 'flexia-blockchain:latest',
         icon: Server,
         defaultPorts: { '8545': '8545' }
@@ -75,6 +81,8 @@ export function ServiceBasics({ data, updateData }: Props) {
             updateData({
                 name: data.name || template.name,
                 type: template.type,
+                service_kind: (template as any).service_kind,
+                slug: (template as any).slug,
                 image: template.image,
                 ports: (template as any).defaultPorts || {},
                 env_vars: (template as any).defaultEnv || {}
@@ -82,6 +90,8 @@ export function ServiceBasics({ data, updateData }: Props) {
         } else if (templateId === 'custom') {
             updateData({
                 type: 'custom',
+                service_kind: 'custom',
+                slug: undefined,
                 image: ''
             });
         }

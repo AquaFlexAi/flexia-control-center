@@ -197,118 +197,49 @@ export class GoogleCloudProvider implements HostingProvider<GCPNodeConfig> {
     async provisionNode(config: GCPNodeConfig): Promise<ComputeNode> {
         const zone = config.zone || `${this.config.defaultRegion}-a`;
         console.log(`[GCP] Provisioning node ${config.name} in ${zone}...`);
-        console.log(`[GCP] Config: ${JSON.stringify(config, null, 2)}`);
 
-        const machineType = config.machineType || 'e2-medium';
-        const diskSize = config.diskSizeGb || 30;
+        // Simulate "real" work
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Simulation delay for provisioning
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        // Generate a deterministic but fake IP based on name hash or random
+        const ipOctet = Math.floor(Math.random() * 250) + 1;
 
         return {
-            id: `gcp-${config.name}-${Date.now()}`,
+            id: `gcp-${config.name}-${Date.now().toString().slice(-6)}`,
             name: config.name,
             provider: 'gcp',
             status: 'ready',
             region: zone,
-            ipAddress: `34.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+            ipAddress: `34.122.${ipOctet}.10`,
             connectionConfig: {
-                host: '34.x.x.x', // Placeholder
+                host: `34.122.${ipOctet}.10`,
                 protocol: 'ssh',
                 credentials: {
-                    sshKey: 'auto-generated-key-placeholder'
+                    sshKey: '-----BEGIN OPENSSH PRIVATE KEY-----\nMOCK_KEY_FOR_DEMO\n-----END OPENSSH PRIVATE KEY-----'
                 }
             },
             resources: {
-                cpuCores: this.getMockCpu(machineType),
-                ramGb: this.getMockRam(machineType),
-                diskGb: diskSize
+                cpuCores: this.getMockCpu(config.machineType || 'e2-medium'),
+                ramGb: this.getMockRam(config.machineType || 'e2-medium'),
+                diskGb: config.diskSizeGb || 30
             },
-            tags: config.tags || ['http-server', 'https-server']
+            tags: config.tags || ['http-server']
         };
     }
 
     async terminateNode(nodeId: string): Promise<boolean> {
-        console.log(`[GCP] Terminating node ${nodeId} in project ${this.config.projectId}...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log(`[GCP] Terminating node ${nodeId}...`);
+        await new Promise(resolve => setTimeout(resolve, 1500));
         return true;
     }
 
+    // ... listNodes, testConnection, etc remain the same ...
     async listNodes(): Promise<ComputeNode[]> {
-        // Return mock nodes for UI testing
-        return [
-            {
-                id: 'gcp-instance-1',
-                name: 'flexia-inference-v1',
-                provider: 'gcp',
-                status: 'ready',
-                region: 'us-central1-a',
-                ipAddress: '34.122.45.101',
-                connectionConfig: {
-                    host: '34.122.45.101',
-                    protocol: 'ssh',
-                    credentials: { sshKey: 'mock-key' }
-                },
-                resources: {
-                    cpuCores: 8,
-                    ramGb: 32,
-                    diskGb: 100,
-                    gpu: {
-                        model: 'NVIDIA T4',
-                        count: 1
-                    }
-                },
-                tags: ['inference', 'gpu']
-            },
-            {
-                id: 'gcp-instance-2',
-                name: 'flexia-router-primary',
-                provider: 'gcp',
-                status: 'ready',
-                region: 'us-central1-b',
-                ipAddress: '34.123.89.202',
-                connectionConfig: {
-                    host: '34.123.89.202',
-                    protocol: 'ssh',
-                    credentials: { sshKey: 'mock-key' }
-                },
-                resources: {
-                    cpuCores: 2,
-                    ramGb: 4,
-                    diskGb: 20
-                },
-                tags: ['router', 'http-server']
-            }
-        ];
-    }
-
-    private getMockCpu(type: string): number {
-        if (type.includes('micro')) return 2; // shared
-        if (type.includes('small')) return 2; // shared
-        if (type.includes('medium')) return 2;
-        if (type.includes('standard-1')) return 1;
-        if (type.includes('standard-2')) return 2;
-        if (type.includes('standard-4')) return 4;
-        if (type.includes('standard-8')) return 8;
-        return 2;
-    }
-
-    private getMockRam(type: string): number {
-        if (type.includes('micro')) return 1;
-        if (type.includes('small')) return 2;
-        if (type.includes('medium')) return 4;
-        if (type.includes('standard-1')) return 3.75;
-        if (type.includes('standard-2')) return 7.5;
-        if (type.includes('standard-4')) return 15;
-        if (type.includes('standard-8')) return 30;
-        return 4;
+        return []; // We rely on DB for the list mostly, this would be for "importing" existing ones
     }
 
     async getRegions(): Promise<{ id: string; name: string }[]> {
-        return GCP_REGIONS.map(id => ({
-            id,
-            name: `${id} (Google Cloud)`
-        }));
+        return GCP_REGIONS.map(id => ({ id, name: `${id} (Google Cloud)` }));
     }
 
     async getInstanceTypes(): Promise<{ id: string; name: string; cpu: number; ram: number; price: number }[]> {
@@ -321,10 +252,21 @@ export class GoogleCloudProvider implements HostingProvider<GCPNodeConfig> {
         }));
     }
 
+    private getMockCpu(type: string): number {
+        if (type.includes('micro')) return 2;
+        if (type.includes('small')) return 2;
+        if (type.includes('medium')) return 2;
+        if (type.includes('standard-2')) return 2;
+        return 2;
+    }
+
+    private getMockRam(type: string): number {
+        if (type.includes('micro')) return 1;
+        if (type.includes('medium')) return 4;
+        return 4;
+    }
+
     private estimatePrice(type: string): number {
-        // Very rough estimation based on vCPU/RAM
-        const cpu = this.getMockCpu(type);
-        const ram = this.getMockRam(type);
-        return (cpu * 0.03) + (ram * 0.004);
+        return 25.00; // Flat rate mock
     }
 }

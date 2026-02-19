@@ -1,13 +1,19 @@
 import { ethers } from "ethers";
 
 // Default to Hardhat Account 0 if not provided (DEV ONLY)
-const DEFAULT_AUTHORITY_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const DEFAULT_AUTHORITY_KEY = process.env.ORACLE_WALLET_PRIVATE_KEY;
+if (!DEFAULT_AUTHORITY_KEY) {
+    throw new Error("ORACLE_WALLET_PRIVATE_KEY is not defined in environment variables");
+}
 
 export class SovereignService {
     private authorityWallet: ethers.Wallet;
 
     constructor() {
-        const privateKey = process.env.AUTHORITY_PRIVATE_KEY || DEFAULT_AUTHORITY_KEY;
+        const privateKey = (process.env.AUTHORITY_PRIVATE_KEY || DEFAULT_AUTHORITY_KEY) as string;
+        if (!privateKey) {
+            throw new Error("AUTHORITY_PRIVATE_KEY is not defined in environment variables");
+        }
         this.authorityWallet = new ethers.Wallet(privateKey);
     }
 

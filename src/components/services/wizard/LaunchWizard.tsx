@@ -13,6 +13,8 @@ interface LaunchWizardProps {
 export type WizardData = {
     name: string;
     type: string;
+    service_kind?: string;
+    slug?: string;
     image: string;
     run_mode: 'prod' | 'dev';
     instances: number;

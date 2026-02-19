@@ -2,12 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Server, Cpu, HardDrive, Network, Globe, AlertCircle, RefreshCw } from 'lucide-react';
 import { ComputeNode } from '@/lib/hosting/types';
 
-interface NodesMap {
-    [provider: string]: ComputeNode[];
-}
-
 export function InfrastructureView() {
-    const [nodes, setNodes] = useState<NodesMap>({});
+    const [nodes, setNodes] = useState<ComputeNode[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +14,7 @@ export function InfrastructureView() {
             const res = await fetch('/api/hosting/nodes');
             if (!res.ok) throw new Error('Failed to fetch infrastructure data');
             const data = await res.json();
-            setNodes(data);
+            setNodes(Array.isArray(data) ? data : []);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -50,9 +46,7 @@ export function InfrastructureView() {
         );
     }
 
-    const providerNames = Object.keys(nodes);
-
-    if (providerNames.length === 0) {
+    if (nodes.length === 0) {
         return (
             <div className="text-center py-12 bg-white/5 rounded-xl border border-white/5">
                 <Server className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -61,6 +55,15 @@ export function InfrastructureView() {
             </div>
         );
     }
+
+    const nodesByProvider = nodes.reduce<Record<string, ComputeNode[]>>((acc, node) => {
+        const key = node.provider || 'unknown';
+        acc[key] = acc[key] || [];
+        acc[key].push(node);
+        return acc;
+    }, {});
+
+    const providerNames = Object.keys(nodesByProvider);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -76,7 +79,7 @@ export function InfrastructureView() {
             </div>
 
             {providerNames.map(provider => {
-                const providerNodes = nodes[provider];
+                const providerNodes = nodesByProvider[provider] || [];
                 if (providerNodes.length === 0) return null;
 
                 return (

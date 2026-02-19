@@ -55,6 +55,9 @@ async function registerInstance(workload: any, identity: any) {
             }
         };
 
+        // DEBUG: Inspect payload causing 401
+        console.log("PAYLOAD_DEBUG:", JSON.stringify(payload, null, 2));
+
         const response = await fetch(`${API_BASE_URL}/api/instances/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

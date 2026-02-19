@@ -1,0 +1,133 @@
+import { StakingDashboard } from '@/components/market/StakingDashboard';
+import { StakingForm } from '@/components/market/StakingForm';
+import { createClient } from '@/utils/supabase/server';
+import {
+    getUserSubscription,
+    calculateStakingFlxCredit,
+    getStakedAssets,
+    getSovereignRewards,
+    getRevenueRewards,
+    SUBSCRIPTION_QUOTAS
+} from '@/services/billing';
+import { checkGenesisEligibility, calculateContributionPoints } from '@/services/economics';
+import { BillingStatusResponse, UserUsageQuota } from '@/types/billing';
+import { NodeStats } from '@/types/economics';
+import { getProvider } from '@/lib/blockchain/provider';
+import { CONTRACTS } from '@/lib/blockchain/contracts';
+import { ethers } from 'ethers';
+import { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
+
+async function StakingContent() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const sub = await getUserSubscription(user.id);
+    const { createAdminClient } = await import('@/utils/supabase/server');
+    const supabaseAdmin = await createAdminClient();
+
+    // Get current month's usage
+    const { data: quota } = await supabaseAdmin
+        .from('user_usage_quotas')
+        .select('token_usage_current')
+        .eq('user_id', user.id)
+        .eq('month_year', new Date().toISOString().slice(0, 7) + '-01')
+        .single<UserUsageQuota>();
+
+    const tier = (sub?.tier || 'free');
+    const quotaConfig = SUBSCRIPTION_QUOTAS[tier as keyof typeof SUBSCRIPTION_QUOTAS] || SUBSCRIPTION_QUOTAS['free'];
+    const limit = quotaConfig.tokens;
+
+    let flxCredit = await calculateStakingFlxCredit(user.id);
+    const stakes = await getStakedAssets(user.id);
+
+    // Blockchain Data Integration
+    let nodeStats: NodeStats = {
+        uptime: 0,
+        successfulProbes: 0,
+        totalProbes: 0,
+        isRegistered: false
+    };
+    let blockchainStake = 0;
+    let sovereignRewards;
+    let revenueRewards;
+
+    const walletAddress = user.user_metadata?.wallet_address;
+
+    if (walletAddress) {
+        try {
+            // Parallel fetch for rewards
+            const [sovRewards, revRewards] = await Promise.all([
+                getSovereignRewards(walletAddress),
+                getRevenueRewards(walletAddress)
+            ]);
+            sovereignRewards = sovRewards;
+            revenueRewards = revRewards;
+
+            const provider = getProvider();
+            const registry = new ethers.Contract(CONTRACTS.registry.address, CONTRACTS.registry.abi, provider);
+
+            // Check if miner is registered
+            const isMiner = await registry.isMiner(walletAddress);
+
+            if (isMiner) {
+                nodeStats.isRegistered = true;
+                const minerInfo = await registry.miners(walletAddress);
+                blockchainStake = parseFloat(ethers.formatEther(minerInfo.stakedAmount));
+            }
+        } catch (error) {
+            console.error("Blockchain connection error:", error);
+        }
+    }
+
+    flxCredit += blockchainStake;
+
+    const genesis = checkGenesisEligibility(nodeStats);
+    const points = calculateContributionPoints(nodeStats);
+
+    const subscriptionData: BillingStatusResponse = {
+        tier,
+        status: sub?.status || 'active',
+        staking: {
+            credit: flxCredit,
+            assets: stakes
+        },
+        usage: {
+            current: quota?.token_usage_current || 0,
+            limit
+        },
+        genesis: {
+            eligible: genesis,
+            badge: genesis,
+            points
+        },
+        sovereignRewards,
+        revenueRewards
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column: Dashboard */}
+            <StakingDashboard sub={subscriptionData} />
+
+            {/* Right Column: Stake Form */}
+            <div>
+                <StakingForm />
+            </div>
+        </div>
+    );
+}
+
+export default function MarketStakingPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-64 items-center justify-center">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        }>
+            <StakingContent />
+        </Suspense>
+    );
+}

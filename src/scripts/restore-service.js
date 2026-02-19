@@ -1,8 +1,12 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = 'http://127.0.0.1:8000';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByb2plY3QtcmVmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTYxNjE5MzgzNywiZXhwIjoxOTI5NTEzODM3fQ.3Suzx0RCpPmaZ6sOx9wQfZDDaWCjrVHcL26W1JGE7H4';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY and/or NEXT_PUBLIC_SUPABASE_URL');
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

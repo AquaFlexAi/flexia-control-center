@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import deployments from '@/lib/blockchain/deployments.json';
 
 export function useWallet() {
     const [address, setAddress] = useState<string | null>(null);
@@ -70,9 +71,12 @@ export function useWallet() {
 
     const switchNetwork = async () => {
         if (!provider) return;
+        const targetChainId = process.env.NEXT_PUBLIC_CHAIN_ID || "31337";
+        const hexChainId = "0x" + parseInt(targetChainId).toString(16);
+
         try {
             // Try to switch to Localhost 8545 (Hardhat)
-            await provider.send("wallet_switchEthereumChain", [{ chainId: "0x7A69" }]); // 31337 in hex
+            await provider.send("wallet_switchEthereumChain", [{ chainId: hexChainId }]);
         } catch (switchError: any) {
             // Ethers v6 often wraps the JSON-RPC error.
             // Check for 4902 (Unrecognized chain) in various properties or message string.
@@ -87,12 +91,12 @@ export function useWallet() {
 
                 try {
                     await provider.send("wallet_addEthereumChain", [{
-                        chainId: "0x7A69", // 31337
-                        chainName: "Local Hardhat",
-                        rpcUrls: ["http://localhost:8545"],
+                        chainId: hexChainId,
+                        chainName: process.env.NEXT_PUBLIC_CHAIN_NAME || "Local Hardhat",
+                        rpcUrls: [process.env.NEXT_PUBLIC_BLOCKCHAIN_RPC_URL || "http://localhost:8545"],
                         nativeCurrency: {
                             name: "Ethereum",
-                            symbol: "ETH",
+                            symbol: process.env.NEXT_PUBLIC_NATIVE_CURRENCY_SYMBOL || "ETH",
                             decimals: 18
                         }
                     }]);
@@ -112,10 +116,10 @@ export function useWallet() {
             await provider.send("wallet_watchAsset", {
                 type: 'ERC20',
                 options: {
-                    address: '0x5FbDB2315678afecb367f032d93F642f64180aa3', // FlexIA Token Address
+                    address: deployments.flxToken || process.env.NEXT_PUBLIC_FLEX_TOKEN_ADDRESS!,
                     symbol: 'FLX',
                     decimals: 18,
-                    image: 'https://flexia.ai/logo.png', // Placeholder
+                    image: process.env.NEXT_PUBLIC_TOKEN_IMAGE_URL,
                 },
             });
         } catch (error) {
@@ -125,23 +129,34 @@ export function useWallet() {
 
     const [balance, setBalance] = useState<string>('0');
 
+    const [lastBalanceUpdate, setLastBalanceUpdate] = useState<number>(0);
+
     const updateBalance = useCallback(async () => {
         if (!provider || !address) return;
+
+        // Throttling: Prevent updating more than once every 10 seconds
+        const now = Date.now();
+        if (now - lastBalanceUpdate < 10000) return;
+
         try {
             const bal = await provider.getBalance(address);
             setBalance(ethers.formatEther(bal));
+            setLastBalanceUpdate(now);
         } catch (err) {
             console.error("Failed to fetch balance", err);
         }
-    }, [provider, address]);
+    }, [provider, address, lastBalanceUpdate]);
 
     useEffect(() => {
         if (address && provider) {
             updateBalance();
-            // Listen for new blocks to update balance
-            provider.on("block", updateBalance);
+
+            // Replaced block listener with interval to avoid rate limiting
+            // Public RPCs often error with "Too many requests" on block subscriptions
+            const interval = setInterval(updateBalance, 15000);
+
             return () => {
-                provider.off("block", updateBalance);
+                clearInterval(interval);
             };
         }
     }, [address, provider, updateBalance]);

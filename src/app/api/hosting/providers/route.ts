@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { HostingManager } from '@/lib/hosting';
 import { HostingProviderDefinition, HostingProvidersPatchRequest } from '@/types/hosting';
+import { authorize } from '@/utils/supabase/auth-check';
 
 const manager = new HostingManager();
 
 export async function GET() {
+    const { authorized, response } = await authorize('manage_infrastructure');
+    if (!authorized) return response!;
+
     try {
         const providers = await manager.getProviders();
         return NextResponse.json(providers as HostingProviderDefinition[]);
@@ -14,6 +18,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+    const { authorized, response } = await authorize('manage_infrastructure');
+    if (!authorized) return response!;
+
     try {
         const body = await req.json();
         const { id, enabled } = body as HostingProvidersPatchRequest;

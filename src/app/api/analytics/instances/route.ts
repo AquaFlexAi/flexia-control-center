@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { authorize } from '@/utils/supabase/auth-check';
 import { API_ROUTE_CONFIG } from '@/config/api-permissions';
-import { 
-    DeployedInstance, 
-    InstanceStatsAccumulator, 
-    EnrichedInstance, 
-    AnalyticsSummary, 
-    InstanceStats 
+import {
+    DeployedInstance,
+    InstanceStatsAccumulator,
+    EnrichedInstance,
+    AnalyticsSummary,
+    InstanceStats
 } from '@/types/instance';
 import { InstanceUsageEvent } from '@/types/usage';
 
@@ -16,12 +16,11 @@ export async function GET() {
         const { authorized, response } = await authorize(API_ROUTE_CONFIG['/api/analytics/instances'].GET!);
         if (!authorized) return response!;
 
-        // Use Admin Client to bypass RLS on deployed_instances
-        const { createAdminClient } = await import("@/utils/supabase/server");
-        const supabaseAdmin = await createAdminClient();
+        const { createClient } = await import("@/utils/supabase/server");
+        const supabase = await createClient();
 
         // 1. Fetch all instances
-        const { data: instances, error } = await supabaseAdmin
+        const { data: instances, error } = await supabase
             .from('deployed_instances')
             .select('*')
             .order('created_at', { ascending: false })
@@ -30,7 +29,7 @@ export async function GET() {
         if (error) throw error;
 
         // 2. Fetch aggregated usage stats per instance
-        const { data: usageEvents } = await supabaseAdmin
+        const { data: usageEvents } = await supabase
             .from('instance_usage_events')
             .select('instance_id, total_tokens, cost, processing_time_ms, uptime_percentage, avg_latency_ms, error_rate, resource_value_usd, cpu_seconds, gpu_seconds, bandwidth_bytes')
             .returns<Partial<InstanceUsageEvent>[]>();

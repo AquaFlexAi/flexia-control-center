@@ -8,23 +8,27 @@ config({ path: path.resolve(process.cwd(), '.env.local') });
 
 // Shared constants
 export const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-export const INVITE_TOKEN = process.env.INSTANCE_INVITE_TOKEN!;
+export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+export const INVITE_TOKEN = process.env.INSTANCE_INVITE_TOKEN || '';
 
 // Admin Supabase client (bypasses RLS)
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-    auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-    },
-});
+export const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    })
+    : null;
 
 // Verify connectivity before tests
 beforeAll(async () => {
+    if (process.env.TEST_SKIP_INFRA === '1') return;
+
     console.log(`\n🧪 FlexAI API Test Suite`);
     console.log(`   Target: ${BASE_URL}`);
-    console.log(`   Supabase: ${SUPABASE_URL}`);
+    console.log(`   Supabase: ${SUPABASE_URL || '(unset)'}`);
 
     // Verify dev server is running
     try {
@@ -40,6 +44,10 @@ beforeAll(async () => {
     }
 
     // Verify Supabase
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !supabaseAdmin) {
+        throw new Error('❌ Supabase env not configured (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).');
+    }
+
     const { error } = await supabaseAdmin.from('organization_members').select('id').limit(1);
     if (error) {
         throw new Error(`❌ Supabase not reachable: ${error.message}`);

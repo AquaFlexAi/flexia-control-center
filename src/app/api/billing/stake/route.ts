@@ -20,28 +20,40 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' } as StakeResponse, { status: 400 });
         }
 
-        // Verify the transaction on-chain
-        console.log(`Verifying staking transaction: ${txHash} for ${amount} ${asset}`);
-
         const amountFloat = parseFloat(amount);
         if (isNaN(amountFloat)) {
              return NextResponse.json({ error: 'Invalid amount format' } as StakeResponse, { status: 400 });
         }
 
+        const walletAddress = user.user_metadata?.wallet_address as string | undefined;
+
         // Bypass verification for Test Runs
-        let isValid = false;
+        let result: { ok: boolean; actualAmount?: number; reason?: string; from?: string } = { ok: false };
         if (req.headers.get('X-Test-Run') === 'true') {
-            console.log('Test run detected: Bypassing on-chain verification');
-            isValid = true;
+            result = { ok: true, actualAmount: amountFloat };
         } else {
-            isValid = await verifyStakingTransaction(txHash, amountFloat, asset);
+            result = await verifyStakingTransaction({
+                txHash,
+                expectedAsset: asset,
+                expectedAmount: amountFloat,
+                expectedFrom: walletAddress
+            });
         }
 
-        if (!isValid) {
-            return NextResponse.json({ error: 'Transaction verification failed' } as StakeResponse, { status: 400 });
+        if (!result.ok) {
+            return NextResponse.json({ error: result.reason || 'Transaction verification failed' } as StakeResponse, { status: 400 });
         }
 
-        await recordStakingEvent(user.id, asset, amountFloat);
+        const finalAmount = result.actualAmount ?? amountFloat;
+        await recordStakingEvent(user.id, asset, finalAmount);
+
+        if (!walletAddress && result.from) {
+            const { createAdminClient } = await import('@/utils/supabase/server');
+            const supabaseAdmin = await createAdminClient();
+            await supabaseAdmin.auth.admin.updateUserById(user.id, {
+                user_metadata: { ...(user.user_metadata || {}), wallet_address: result.from }
+            });
+        }
 
         return NextResponse.json({ success: true } as StakeResponse);
     } catch (error: any) {

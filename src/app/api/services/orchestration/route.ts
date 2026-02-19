@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createAdminClient } from '@/utils/supabase/server';
+import { createClient } from '@/utils/supabase/server';
 import { getDockerInstance, SERVICE_CONTAINER_MAP, SERVICE_DEFAULTS, createContainer, inspectContainerState, startContainer, stopContainer, restartContainer } from '@/lib/docker';
 import { authorize } from '@/utils/supabase/auth-check';
+import { resolveServiceKind, resolveDefaultsKeyFromKind, resolveContainerKeyFromKind } from '@/lib/service-resolver';
 import { ServiceOrchestrationRequest } from '@/types/service';
 
 export async function POST(request: Request) {
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
     const { authorized, response, user } = await authorize('manage_services');
     if (!authorized || !user) return response!;
 
-    const supabase = await createAdminClient();
+    const supabase = await createClient();
 
     const body: ServiceOrchestrationRequest = await request.json();
     const { serviceId, action, instanceId } = body;
@@ -29,10 +30,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Service not found' }, { status: 404 });
     }
 
+    const kind = resolveServiceKind(service);
+    if (kind === 'blockchain' || service.type === 'infrastructure') {
+        const infra = await authorize('manage_infrastructure');
+        if (!infra.authorized) return infra.response!;
+    }
+
+    const containerKey = resolveContainerKeyFromKind(kind) || service.name;
+
     // Determine container name: use specific instanceId if provided, else fallback to map/default
     let containerName = instanceId;
     if (!containerName) {
-        containerName = SERVICE_CONTAINER_MAP[service.name];
+        containerName = SERVICE_CONTAINER_MAP[containerKey];
     }
 
     // If still no container name (and no instanceId provided), we might need to derive it
@@ -40,8 +49,9 @@ export async function POST(request: Request) {
         // Fallback: try to guess standard naming convention if map fails
         // This is important for dynamic services not in the static map
         // e.g. "Agent Zero Cluster" -> "agent-zero-cluster-0" (default to first instance)
-        const slug = service.name.toLowerCase().replace(/ /g, '-');
-        containerName = `${slug}-0`;
+        const slugSource = (service.slug || service.name || '').toString();
+        const slug = slugSource.toLowerCase().replace(/\s+/g, '-');
+        containerName = slug;
     }
 
     if (!containerName) {
@@ -69,10 +79,11 @@ export async function POST(request: Request) {
             const state = await inspectContainerState(containerName);
             if (state.Missing) {
                 // Container doesn't exist, create it
-                const defaults = SERVICE_DEFAULTS[service.name];
+                const defaultsKey = resolveDefaultsKeyFromKind(kind) || service.name;
+                const defaults = SERVICE_DEFAULTS[defaultsKey];
                 if (!defaults) {
                     const code = 'DEFAULT_CONFIG_MISSING';
-                    throw Object.assign(new Error(`No default configuration found for ${service.name}. Cannot auto-provision.`), { code });
+                    throw Object.assign(new Error(`No default configuration found for ${service.name} (${kind}). Cannot auto-provision.`), { code });
                 }
 
                 await createContainer({
@@ -93,7 +104,8 @@ export async function POST(request: Request) {
             const state = await inspectContainerState(containerName);
             if (state.Missing) {
                 // If missing, treat restart as start/create
-                const defaults = SERVICE_DEFAULTS[service.name];
+                const defaultsKey = resolveDefaultsKeyFromKind(kind) || service.name;
+                const defaults = SERVICE_DEFAULTS[defaultsKey];
                 if (defaults) {
                     await createContainer({
                         name: containerName,
@@ -104,7 +116,7 @@ export async function POST(request: Request) {
                     });
                 } else {
                     const code = 'DEFAULT_CONFIG_MISSING';
-                    throw Object.assign(new Error(`Container missing and no default config for ${service.name}`), { code });
+                    throw Object.assign(new Error(`Container missing and no default config for ${service.name} (${kind})`), { code });
                 }
             } else {
                 await restartContainer(containerName);

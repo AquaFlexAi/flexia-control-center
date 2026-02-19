@@ -1,87 +1,56 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Gavel, CheckCircle2, XCircle, Clock, Loader2, ArrowRight } from 'lucide-react';
-
-interface Proposal {
-    id: number;
-    target: string;
-    description: string;
-    forVotes: string;
-    againstVotes: string;
-    startTime: number;
-    endTime: number;
-    executed: boolean;
-    canceled: boolean;
-    state: number;
-}
+import { useCouncil } from '@/hooks/useCouncil';
+import { CreateProposalModal } from './CreateProposalModal';
 
 export function CouncilDashboard() {
-    const [proposals, setProposals] = useState<Proposal[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [votingId, setVotingId] = useState<number | null>(null);
-
-    async function fetchProposals() {
-        setLoading(true);
-        try {
-            const res = await fetch('/api/sovereign/proposals');
-            const data = await res.json();
-            setProposals(data.proposals || []);
-        } catch (err) {
-            console.error("Failed to fetch proposals", err);
-        } finally {
-            setLoading(false);
-        }
-    }
+    const { proposals, loading, refresh, castVote, execute } = useCouncil();
+    const [votingId, setVotingId] = React.useState<number | null>(null);
 
     async function handleVote(proposalId: number, support: boolean) {
         setVotingId(proposalId);
         try {
-            const res = await fetch('/api/sovereign/proposals/vote', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ proposalId, support })
-            });
-            if (res.ok) {
-                await fetchProposals();
-                alert("Vote cast successfully!");
-            } else {
-                const err = await res.json();
-                alert(`Vote failed: ${err.error}`);
-            }
+            await castVote(proposalId, support);
         } catch (err: any) {
-            alert(`Error: ${err.message}`);
+            alert(`Vote failed: ${err.message}`);
         } finally {
             setVotingId(null);
         }
     }
 
-    useEffect(() => {
-        fetchProposals();
-    }, []);
+    async function handleExecute(proposalId: number) {
+        setVotingId(proposalId);
+        try {
+            await execute(proposalId);
+        } catch (err: any) {
+            alert(`Execution failed: ${err.message}`);
+        } finally {
+            setVotingId(null);
+        }
+    }
 
-    const getStatusLabel = (state: number) => {
+    const getStatusLabel = (status: number) => {
         const states = [
             { label: 'Pending', color: 'bg-yellow-500/10 text-yellow-500' },
             { label: 'Active', color: 'bg-green-500/10 text-green-500' },
-            { label: 'Canceled', color: 'bg-gray-500/10 text-gray-500' },
             { label: 'Defeated', color: 'bg-red-500/10 text-red-500' },
             { label: 'Succeeded', color: 'bg-blue-500/10 text-blue-500' },
-            { label: 'Queued', color: 'bg-purple-500/10 text-purple-500' },
-            { label: 'Expired', color: 'bg-gray-500/10 text-gray-500' },
             { label: 'Executed', color: 'bg-teal-500/10 text-teal-500' }
         ];
-        return states[state] || { label: 'Unknown', color: 'bg-gray-500/10 text-gray-500' };
+        // Ensure index boundary
+        return states[status] || { label: 'Unknown', color: 'bg-gray-500/10 text-gray-500' };
     };
 
     if (loading && proposals.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-                <p className="text-muted-foreground">Fetching Council Proposals...</p>
+                <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                <p className="text-white/40 font-mono text-sm">Syncing Governance Chain...</p>
             </div>
         );
     }
@@ -90,47 +59,61 @@ export function CouncilDashboard() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Gavel className="w-6 h-6 text-purple-400" /> Active Governance
+                    <Gavel className="w-6 h-6 text-amber-500" /> Active Governance
                 </h2>
-                <Button variant="outline" size="sm" onClick={fetchProposals} disabled={loading}>
-                    <Clock className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Sync Chain
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={refresh} disabled={loading} className="border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-slate-400">
+                        <Clock className={`w-3.5 h-3.5 mr-2 ${loading ? 'animate-spin' : ''}`} /> Sync
+                    </Button>
+                    <CreateProposalModal onProposalCreated={refresh} />
+                </div>
             </div>
 
             {proposals.length === 0 ? (
-                <Card className="bg-white/5 border-white/5">
+                <Card className="bg-slate-950/30 border-slate-800/60 backdrop-blur-sm">
                     <CardContent className="py-12 text-center">
-                        <p className="text-muted-foreground">No active proposals found in the Sovereign Council.</p>
+                        <p className="text-slate-500">No active proposals found in the Sovereign Council.</p>
+                        <p className="text-xs text-slate-600 mt-2">Create a proposal to start governance.</p>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {proposals.map((prop) => (
-                        <Card key={prop.id} className="bg-white/5 border-white/5 overflow-hidden hover:bg-white/[0.07] transition-all">
+                        <Card key={prop.id} className="bg-slate-950/40 border-slate-800/60 hover:bg-slate-900/40 transition-all overflow-hidden relative group">
+                            {/* Glow Effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
                             <CardContent className="p-0">
-                                <div className="p-6 flex flex-col md:flex-row gap-6">
+                                <div className="p-6 flex flex-col md:flex-row gap-6 relative z-10">
                                     <div className="flex-1 space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-xs font-mono text-white/40">#{prop.id}</span>
-                                            <Badge className={getStatusLabel(prop.state).color + " border-none"}>
-                                                {getStatusLabel(prop.state).label}
+                                            <span className="text-xs font-mono text-slate-500">#{prop.id}</span>
+                                            <Badge className={getStatusLabel(prop.status).color + " border-none"}>
+                                                {getStatusLabel(prop.status).label}
                                             </Badge>
+                                            {prop.hasVoted && (
+                                                <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-400">
+                                                    Voted
+                                                </Badge>
+                                            )}
                                         </div>
-                                        <h3 className="text-lg font-semibold text-white">{prop.description}</h3>
-                                        <p className="text-sm text-muted-foreground font-mono truncate">Target: {prop.target}</p>
+                                        <h3 className="text-lg font-semibold text-slate-200">{prop.description}</h3>
+                                        <p className="text-xs text-slate-500 font-mono truncate max-w-md bg-slate-950/50 p-1.5 rounded border border-slate-800/50">
+                                            Target: {prop.target}
+                                        </p>
 
-                                        <div className="flex items-center gap-6 mt-4">
+                                        <div className="flex items-center gap-8 mt-4">
                                             <div className="space-y-1">
-                                                <p className="text-[10px] uppercase tracking-wider text-white/40">For</p>
-                                                <p className="text-sm font-bold text-green-400">{prop.forVotes} FLX</p>
+                                                <p className="text-[10px] uppercase tracking-wider text-slate-500">For</p>
+                                                <p className="text-sm font-bold text-emerald-400 font-mono">{Number(prop.forVotes).toLocaleString()} FLX</p>
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="text-[10px] uppercase tracking-wider text-white/40">Against</p>
-                                                <p className="text-sm font-bold text-red-400">{prop.againstVotes} FLX</p>
+                                                <p className="text-[10px] uppercase tracking-wider text-slate-500">Against</p>
+                                                <p className="text-sm font-bold text-red-400 font-mono">{Number(prop.againstVotes).toLocaleString()} FLX</p>
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="text-[10px] uppercase tracking-wider text-white/40">Ends In</p>
-                                                <p className="text-sm font-bold text-white">
+                                                <p className="text-[10px] uppercase tracking-wider text-slate-500">Ends In</p>
+                                                <p className="text-sm font-bold text-slate-300">
                                                     {prop.endTime > Date.now() / 1000
                                                         ? Math.ceil((prop.endTime - Date.now() / 1000) / 3600) + "h"
                                                         : "Ended"}
@@ -140,11 +123,11 @@ export function CouncilDashboard() {
                                     </div>
 
                                     <div className="flex flex-row md:flex-col justify-center gap-2">
-                                        {prop.state === 1 && (
+                                        {prop.status === 1 && !prop.hasVoted && (
                                             <>
                                                 <Button
                                                     size="sm"
-                                                    className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30"
+                                                    className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20"
                                                     onClick={() => handleVote(prop.id, true)}
                                                     disabled={votingId !== null}
                                                 >
@@ -152,7 +135,7 @@ export function CouncilDashboard() {
                                                 </Button>
                                                 <Button
                                                     size="sm"
-                                                    className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30"
+                                                    className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20"
                                                     onClick={() => handleVote(prop.id, false)}
                                                     disabled={votingId !== null}
                                                 >
@@ -160,17 +143,22 @@ export function CouncilDashboard() {
                                                 </Button>
                                             </>
                                         )}
-                                        {prop.state === 4 && (
-                                            <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white">
-                                                Execute Proposal <ArrowRight className="w-4 h-4 ml-2" />
+                                        {prop.status === 3 && (
+                                            <Button
+                                                size="sm"
+                                                className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+                                                onClick={() => handleExecute(prop.id)}
+                                                disabled={votingId !== null}
+                                            >
+                                                {votingId === prop.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-2" />} Execute
                                             </Button>
                                         )}
                                     </div>
                                 </div>
-                                <div className="h-1 bg-white/5 relative">
+                                <div className="h-1 bg-slate-800 relative">
                                     <div
-                                        className="h-full bg-green-500 absolute left-0 top-0 transition-all duration-1000"
-                                        style={{ width: `${(Number(prop.forVotes) / (Number(prop.forVotes) + Number(prop.againstVotes) || 1)) * 100}%` }}
+                                        className="h-full bg-emerald-500 absolute left-0 top-0 transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                        style={{ width: `${(Number(prop.forVotes) / ((Number(prop.forVotes) + Number(prop.againstVotes)) || 1)) * 100}%` }}
                                     />
                                 </div>
                             </CardContent>

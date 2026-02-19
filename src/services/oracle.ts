@@ -5,7 +5,7 @@ import { getConfigValue } from '@/lib/vault';
 import { CONTRACTS } from '@/lib/blockchain/contracts';
 
 // Environment Configuration
-const BLOCKCHAIN_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || process.env.BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545';
+const BLOCKCHAIN_RPC_URL = process.env.BLOCKCHAIN_RPC_URL || process.env.NEXT_PUBLIC_BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545';
 const TOKEN_CONTRACT_ADDRESS = CONTRACTS.token.address;
 const REWARD_RATE = parseFloat(process.env.REWARD_RATE || '1'); // FLX per 1000 tokens
 

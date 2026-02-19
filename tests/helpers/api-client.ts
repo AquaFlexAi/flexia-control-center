@@ -89,10 +89,14 @@ export class ApiClient {
         const headers: Record<string, string> = {
             'X-Trace-ID': traceId,
             'X-Span-ID': spanId,
-            'X-Test-Run': 'true',
-            'x-flexia-e2e-token': 'flexia-dev-bypass',
+
             ...extraHeaders,
         };
+
+        if (process.env.NODE_ENV === 'test') {
+            headers['X-Test-Run'] = 'true';
+            headers['x-flexia-e2e-token'] = 'flexia-dev-bypass';
+        }
 
         if (this.userId) {
             headers['x-flexia-user-id'] = this.userId;

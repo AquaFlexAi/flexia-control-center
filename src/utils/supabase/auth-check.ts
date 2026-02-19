@@ -29,6 +29,15 @@ export async function authorize(permission: Permission): Promise<{ authorized: b
         };
     }
 
+    // Validate User Role Claim (prevents 'role "" does not exist' DB errors)
+    if (!user.role || user.role.trim() === '') {
+        console.warn('[RBAC] User has empty role claim. Session likely invalid.', user.id);
+        return {
+            authorized: false,
+            response: NextResponse.json({ error: 'Unauthorized: Invalid session (empty role). Please login again.' }, { status: 401 })
+        };
+    }
+
     // 1. Try to get role from metadata first (Performance)
     let role = user.user_metadata?.role as Role;
 
@@ -40,8 +49,14 @@ export async function authorize(permission: Permission): Promise<{ authorized: b
         const { data: member, error: memberError } = await supabaseAdmin
             .from('organization_members')
             .select('role')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        const { data: memberByEmail } = !member && user.email ? await supabaseAdmin
+            .from('organization_members')
+            .select('role')
             .eq('email', user.email)
-            .single();
+            .maybeSingle() : { data: null };
 
         if (memberError) {
             // Error fetching member, role remains undefined
@@ -49,6 +64,8 @@ export async function authorize(permission: Permission): Promise<{ authorized: b
 
         if (member) {
             role = member.role as Role;
+        } else if (memberByEmail) {
+            role = memberByEmail.role as Role;
         }
     }
 

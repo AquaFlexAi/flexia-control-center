@@ -22,8 +22,8 @@ Detailed documentation for each module can be found in the [`docs/`](./docs) dir
 ## 🚀 Key Features
 
 - **🤖 AI Orchestration**: Deploy and manage AI agents (Agent Zero) and services with a few clicks.
-- **☁️ Multi-Cloud Support**: Seamlessly provision and manage resources on Hetzner, Google Cloud, or local nodes.
-- **🔐 Enterprise Security**: Robust RBAC (Role-Based Access Control) and encrypted credential storage.
+- **☁️ Multi-Cloud & Hybrid Ingress**: Seamlessly provision Tunnels and Secured Access Policies via Cloudflare Integration.
+- **🔐 Enterprise Security**: Robust RBAC, encrypted credentials (Vault), and Zero Trust Network Access.
 - **💳 Hybrid Billing**: 
   - Traditional SaaS subscriptions via Stripe.
   - **Crypto Staking**: Stake assets (BTC, ETH) to earn credits (Islamic Finance compliant yield model).

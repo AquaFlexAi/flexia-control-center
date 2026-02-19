@@ -1,9 +1,39 @@
 import 'dotenv/config'; // Load environment variables before anything else
 import { createServer } from 'http';
 import { parse } from 'url';
+
+// Environment Variable Assertion
+const REQUIRED_VARS = [
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'NEXT_PUBLIC_BLOCKCHAIN_RPC_URL',
+  'ORACLE_WALLET_PRIVATE_KEY'
+];
+
+console.log('--- Environment Check ---');
+let envValid = true;
+REQUIRED_VARS.forEach(key => {
+  const Val = process.env[key];
+  if (!Val) {
+    console.error(`❌ Missing ${key}`);
+    envValid = false;
+  } else {
+    // Basic redaction for logs
+    const display = key.includes('KEY') || key.includes('SECRET')
+      ? '****************'
+      : Val.length > 20 ? Val.substring(0, 8) + '...' : Val;
+    console.log(`✅ ${key} loaded (${display})`);
+
+    // Config warning
+    if (key === 'NEXT_PUBLIC_BLOCKCHAIN_RPC_URL' && Val.includes('localhost')) {
+      console.warn(`⚠️  WARNING: ${key} is set to localhost. Is this intended? User requested remote IP.`);
+    }
+  }
+});
+console.log('-------------------------');
 import next from 'next';
 import { WebSocketServer, WebSocket } from 'ws';
-import { getDockerInstance, getContainerName } from './src/lib/docker';
+import { getDockerInstance, getContainerName, listContainers } from './src/lib/docker';
 import { createServerClient } from '@supabase/ssr';
 import { Client } from 'ssh2';
 import { HostingProviderFactory, HostingManager } from './src/lib/hosting';
@@ -29,8 +59,8 @@ console.log('--- Server Start Process ---');
 console.log('Server running in:', process.cwd());
 
 try {
-  console.log('Loading Next.js...');
-  const app = next({ dev, dir: __dirname, webpack: true });
+  console.log('Loading Next.js (Turbopack enabled)...');
+  const app = next({ dev, dir: __dirname, turbo: dev });
   console.log('Getting request handler...');
   const handle = app.getRequestHandler();
   console.log('Next.js initialized.');
@@ -69,6 +99,7 @@ try {
     const { pathname } = parse(request.url!, true);
 
     if (pathname?.startsWith('/api/supabase')) {
+      request.url = request.url?.replace(/^\/api\/supabase/, '') || '/';
       proxy.ws(request, socket, head);
       return;
     }
@@ -279,8 +310,7 @@ try {
     async function emitSnapshot() {
       try {
         const { data: services } = await supabase.from('services').select('*').order('name', { ascending: true });
-        const docker = getDockerInstance();
-        const containers = await docker.listContainers({ all: false });
+        const containers = await listContainers();
         const map = new Map(containers.map((c: any) => [c.Names[0].replace('/', ''), c]));
 
         const payload = (services || []).map((svc: any) => {

@@ -1,3 +1,4 @@
+// DEPRECATED: Use scripts/reset-and-seed.ts instead
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';

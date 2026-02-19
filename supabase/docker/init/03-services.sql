@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS services (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     name TEXT NOT NULL,
     type TEXT NOT NULL,
+    service_kind TEXT,
+    slug TEXT,
     status TEXT DEFAULT 'offline',
     instances INTEGER DEFAULT 1,
     region TEXT,

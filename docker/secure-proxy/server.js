@@ -6,8 +6,15 @@ const { Kafka } = require('kafkajs');
 require('dotenv').config({ path: '/app/.env' });
 
 const PORT = process.env.PROXY_PORT || 2376;
+const HOST = process.env.PROXY_HOST || '0.0.0.0';
 const DOCKER_SOCKET = process.platform === 'win32' ? '//./pipe/docker_engine' : '/var/run/docker.sock';
 const KAFKA_BROKERS = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
+const POLICY_MODE = (process.env.PROXY_POLICY_MODE || 'open').toLowerCase();
+const ALLOWED_CNS = (process.env.PROXY_ALLOWED_CNS || '').split(',').map(s => s.trim()).filter(Boolean);
+const ALLOWED_CONTAINER_NAMES = (process.env.PROXY_ALLOWED_CONTAINER_NAMES || '').split(',').map(s => s.trim()).filter(Boolean);
+const EVENT_STREAMING_ENABLED = (process.env.EVENT_STREAMING_ENABLED || 'true').toLowerCase() === 'true';
+
+const docker = new Docker({ socketPath: DOCKER_SOCKET });
 
 // 1. Setup TLS with mTLS support
 const options = {
@@ -34,13 +41,93 @@ proxy.on('error', (err, req, res) => {
 });
 
 // 3. Create Secure Server
-const server = https.createServer(options, (req, res) => {
+function _sendDenied(res, message) {
+    if (res.writeHead) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+    }
+    res.end(message || 'Forbidden');
+}
+
+function _matchDockerRoute(url) {
+    const path = (url || '').split('?')[0] || '';
+    const parts = path.split('/').filter(Boolean);
+    return { path, parts };
+}
+
+async function _isRequestAllowed(req, clientCert) {
+    if (POLICY_MODE === 'open') {
+        return { ok: true };
+    }
+
+    const cn = clientCert?.subject?.CN;
+    if (!cn) {
+        return { ok: false, reason: 'Missing client certificate CN' };
+    }
+    if (ALLOWED_CNS.length && !ALLOWED_CNS.includes(cn)) {
+        return { ok: false, reason: 'Client CN not allowed' };
+    }
+
+    const method = (req.method || 'GET').toUpperCase();
+    const { path, parts } = _matchDockerRoute(req.url);
+
+    if (method === 'GET' && (path === '/_ping' || path === '/version' || path === '/info')) {
+        return { ok: true };
+    }
+
+    if (method === 'GET' && parts[0] === 'containers' && parts[1] === 'json') {
+        return { ok: true };
+    }
+
+    const isContainerScoped = parts[0] === 'containers' && parts.length >= 3;
+    if (isContainerScoped) {
+        const containerId = parts[1];
+        const action = parts[2];
+
+        const allowedActions = new Set(['json', 'logs']);
+        const allowedPostActions = new Set(['start', 'stop', 'restart']);
+
+        if (method === 'GET' && allowedActions.has(action)) {
+            if (!ALLOWED_CONTAINER_NAMES.length) return { ok: true };
+            const info = await docker.getContainer(containerId).inspect();
+            const name = (info?.Name || '').replace(/^\//, '');
+            if (ALLOWED_CONTAINER_NAMES.includes(name)) return { ok: true };
+            return { ok: false, reason: 'Container not allowed' };
+        }
+
+        if (method === 'POST' && allowedPostActions.has(action)) {
+            if (!ALLOWED_CONTAINER_NAMES.length) return { ok: true };
+            const info = await docker.getContainer(containerId).inspect();
+            const name = (info?.Name || '').replace(/^\//, '');
+            if (ALLOWED_CONTAINER_NAMES.includes(name)) return { ok: true };
+            return { ok: false, reason: 'Container not allowed' };
+        }
+    }
+
+    if (method === 'GET' && parts[0] === 'events') {
+        return { ok: true };
+    }
+
+    return { ok: false, reason: 'Route not allowed' };
+}
+
+const server = https.createServer(options, async (req, res) => {
     const clientCert = req.socket.getPeerCertificate();
-    console.log(`[Proxy] Request from ${clientCert.subject.CN} - ${req.method} ${req.url}`);
+    const cn = clientCert?.subject?.CN || 'unknown';
+    console.log(`[Proxy] Request from ${cn} - ${req.method} ${req.url}`);
 
-    // Potential filtering logic here (e.g. only allow GET)
-
-    proxy.web(req, res);
+    try {
+        const decision = await _isRequestAllowed(req, clientCert);
+        if (!decision.ok) {
+            return _sendDenied(res, decision.reason);
+        }
+        proxy.web(req, res);
+    } catch (err) {
+        console.error('[Policy Error]', err);
+        if (res.writeHead) {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+        }
+        res.end('Policy evaluation failed');
+    }
 });
 
 // Handling WebSockets (for Docker exec/attach)
@@ -57,7 +144,6 @@ async function startEventStreaming() {
     });
 
     const producer = kafka.producer();
-    const docker = new Docker({ socketPath: DOCKER_SOCKET });
 
     try {
         await producer.connect();
@@ -90,7 +176,9 @@ async function startEventStreaming() {
     }
 }
 
-server.listen(PORT, () => {
-    console.log(`[Proxy] Secure Docker Proxy listening on port ${PORT}`);
-    startEventStreaming();
+server.listen(PORT, HOST, () => {
+    console.log(`[Proxy] Secure Docker Proxy listening on ${HOST}:${PORT}`);
+    if (EVENT_STREAMING_ENABLED) {
+        startEventStreaming();
+    }
 });

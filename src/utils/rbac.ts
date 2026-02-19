@@ -1,8 +1,21 @@
 
-export type Role = 'system_admin' | 'owner' | 'admin' | 'manager' | 'developer' | 'analyst' | 'viewer';
+export type Role =
+  | 'system_admin'
+  | 'infra_manager'
+  | 'enterprise_admin'
+  | 'enterprise_user'
+  | 'owner'
+  | 'admin'
+  | 'manager'
+  | 'developer'
+  | 'analyst'
+  | 'viewer';
 
 export const ROLES = {
   SYSTEM_ADMIN: 'system_admin',
+  INFRA_MANAGER: 'infra_manager',
+  ENTERPRISE_ADMIN: 'enterprise_admin',
+  ENTERPRISE_USER: 'enterprise_user',
   OWNER: 'owner',
   ADMIN: 'admin',
   MANAGER: 'manager',
@@ -13,6 +26,9 @@ export const ROLES = {
 
 export const ROLE_LABELS: Record<Role, string> = {
   system_admin: 'System Admin',
+  infra_manager: 'Infra Manager',
+  enterprise_admin: 'Enterprise Admin',
+  enterprise_user: 'Enterprise User',
   owner: 'Owner',
   admin: 'Admin',
   manager: 'Manager',
@@ -25,6 +41,7 @@ export type Permission =
   // Dashboard & Analytics
   | "view_dashboard"
   | "view_analytics"
+  | "view_router_analytics"
   | "view_realtime_metrics"
 
   // Logs
@@ -38,6 +55,7 @@ export type Permission =
   | "delete_services"
   | "view_service_config"
   | "edit_service_config"
+  | "view_infrastructure"
   | "manage_infrastructure"
   | "manage_infrastructure_instances"
 
@@ -67,6 +85,7 @@ export type Permission =
 export const PERMISSION_DETAILS: Record<Permission, { description: string, module: string }> = {
   view_dashboard: { description: 'View the main dashboard overview', module: 'dashboard' },
   view_analytics: { description: 'View detailed analytics reports', module: 'analytics' },
+  view_router_analytics: { description: 'View router analytics for your organization', module: 'analytics' },
   view_realtime_metrics: { description: 'View real-time telemetry streams', module: 'analytics' },
 
   view_logs: { description: 'View service and system logs', module: 'logs' },
@@ -78,6 +97,7 @@ export const PERMISSION_DETAILS: Record<Permission, { description: string, modul
   delete_services: { description: 'Delete existing services', module: 'services' },
   view_service_config: { description: 'View sensitive service configuration', module: 'services' },
   edit_service_config: { description: 'Edit service configuration', module: 'services' },
+  view_infrastructure: { description: 'View infrastructure and compute nodes', module: 'services' },
   manage_infrastructure: { description: 'Manage underlying compute resources', module: 'services' },
   manage_infrastructure_instances: { description: 'Manage individual compute instances', module: 'services' },
 
@@ -105,6 +125,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   system_admin: [
     "view_dashboard",
     "view_analytics",
+    "view_router_analytics",
     "view_realtime_metrics",
     "view_logs",
     "export_logs",
@@ -114,6 +135,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "delete_services",
     "view_service_config",
     "edit_service_config",
+    "view_infrastructure",
     "view_billing",
     "manage_billing",
     "view_invoices",
@@ -133,9 +155,48 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "billing:view_all",
     "billing:manage_all",
   ],
+  infra_manager: [
+    "view_dashboard",
+    "view_analytics",
+    "view_router_analytics",
+    "view_realtime_metrics",
+    "view_logs",
+    "export_logs",
+    "view_infrastructure",
+    "manage_infrastructure",
+    "manage_infrastructure_instances",
+    "view_settings",
+    "manage_system_settings",
+  ],
+  enterprise_admin: [
+    "view_dashboard",
+    "view_analytics",
+    "view_router_analytics",
+    "view_logs",
+    "view_services",
+    "manage_services",
+    "create_services",
+    "delete_services",
+    "view_service_config",
+    "edit_service_config",
+    "view_settings",
+    "manage_team",
+    "manage_roles",
+    "access_api_keys",
+  ],
+  enterprise_user: [
+    "view_dashboard",
+    "view_analytics",
+    "view_router_analytics",
+    "view_logs",
+    "view_services",
+    "view_service_config",
+    "access_api_keys",
+  ],
   owner: [
     "view_dashboard",
     "view_analytics",
+    "view_router_analytics",
     "view_realtime_metrics",
     "view_logs",
     "export_logs",
@@ -154,6 +215,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "manage_roles",
     "manage_integrations",
     "access_api_keys",
+    "view_infrastructure",
     "manage_infrastructure",
     "manage_infrastructure_instances",
     "manage_governance",
@@ -163,6 +225,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   admin: [
     "view_dashboard",
     "view_analytics",
+    "view_router_analytics",
     "view_realtime_metrics",
     "view_logs",
     "export_logs",
@@ -178,11 +241,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "manage_team",
     "manage_integrations",
     "access_api_keys",
+    "view_infrastructure",
     "manage_infrastructure_instances",
   ],
   manager: [
     "view_dashboard",
     "view_analytics",
+    "view_router_analytics",
     "view_realtime_metrics",
     "view_logs",
     "view_services",
@@ -196,6 +261,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   developer: [
     "view_dashboard",
     "view_analytics",
+    "view_router_analytics",
     "view_logs",
     "view_services",
     "manage_services",
@@ -207,11 +273,12 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   analyst: [
     "view_dashboard",
     "view_analytics",
+    "view_router_analytics",
     "view_realtime_metrics",
     "view_logs",
     "export_logs",
   ],
-  viewer: ["view_dashboard", "view_analytics", "view_services"],
+  viewer: ["view_dashboard", "view_analytics", "view_router_analytics", "view_services"],
 };
 
 export function getRoleLabel(role: string): string {
