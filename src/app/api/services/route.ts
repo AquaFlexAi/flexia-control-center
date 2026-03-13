@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { listContainers, getContainerName } from "@/lib/docker";
@@ -37,21 +38,26 @@ export async function GET(request: Request) {
 
     const { data: services, error } = await query;
 
+    console.log(`[Services API] Suppabase Query finished. Error: ${error}, Rows: ${services?.length}`);
+
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // 2. Fetch actually running containers (Local Node for now)
+    console.log(`[Services API] Fetching running containers from docker...`);
     const runningContainers = await listContainers();
+    console.log(`[Services API] Docker fetch finished. Found ${runningContainers?.length} containers.`);
     const containerMap = new Map(runningContainers.map((c) => [c.Names[0].replace('/', ''), c]));
 
     // 3. Map to frontend expected format with SYNCED status
     // Fixed: deployed_instances now has service_id and total_flx_earned
+    console.log(`[Services API] Fetching deployed_instances from Supabase...`);
     const { data: miningInstances } = await supabase
         .from('deployed_instances')
         .select('service_id, total_flx_earned, config');
 
-    const formattedServices: Service[] = services.map(service => {
+    const formattedServices: Service[] = services.map((service: any) => {
         const instanceCount = service.instances || 1;
         let runningInstances = 0;
         const instanceDetails: ServiceInstance[] = [];
@@ -85,7 +91,7 @@ export async function GET(request: Request) {
         const health = runningInstances === instanceCount ? 'healthy' : (runningInstances > 0 ? 'degraded' : 'offline');
 
         // Identify if this service has blockchain data linked to it
-        const serviceMining = miningInstances?.some(mi => mi.service_id === service.id && (mi.total_flx_earned > 0 || mi.config?.walletAddress));
+        const serviceMining = miningInstances?.some((mi: any) => mi.service_id === service.id && (mi.total_flx_earned > 0 || mi.config?.walletAddress));
 
         return {
             id: service.id,
@@ -216,7 +222,7 @@ export async function DELETE(request: Request) {
         .select('total_flx_earned, config')
         .eq('service_id', id);
 
-    const hasBlockchainData = blockchainInstances?.some(bi => (bi.total_flx_earned > 0 || bi.config?.walletAddress));
+    const hasBlockchainData = blockchainInstances?.some((bi: any) => (bi.total_flx_earned > 0 || bi.config?.walletAddress));
 
     // 2. Fetch service name to stop containers
     const { data: service } = await supabase.from('services').select('name, slug, instances').eq('id', id).single();

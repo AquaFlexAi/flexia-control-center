@@ -6,9 +6,20 @@ import { CONTRACTS } from '@/lib/blockchain/contracts';
 import { getProvider } from '@/lib/blockchain/provider';
 import { ethers } from 'ethers';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-01-27.acacia' as any,
-});
+// Lazy-initialized: Stripe must NOT be instantiated at module load time during Next.js build,
+// because STRIPE_SECRET_KEY is a runtime secret (not a build ARG) and is undefined during `next build`.
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+    if (!_stripe) {
+        if (!process.env.STRIPE_SECRET_KEY) {
+            throw new Error('STRIPE_SECRET_KEY is not set. Ensure it is configured in your runtime environment.');
+        }
+        _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+            apiVersion: '2025-01-27.acacia' as any,
+        });
+    }
+    return _stripe;
+}
 
 if (!process.env.STRIPE_PRO_PRICE_ID || !process.env.STRIPE_ENTERPRISE_PRICE_ID) {
     console.warn("Missing Stripe Price IDs in environment variables. Billing may malfunction.");
@@ -77,14 +88,14 @@ export async function createCheckoutSession(userId: string, tier: 'pro' | 'enter
     if (!customerId) {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        const customer = await stripe.customers.create({
+        const customer = await getStripe().customers.create({
             email: user?.email || undefined,
             metadata: { supabase_user_id: userId },
         });
         customerId = customer.id;
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
@@ -206,7 +217,7 @@ export async function getAdminBillingStats(scopeUserId?: string) {
     const LIQUIDITY_POWER_MULTIPLIER = 10;
 
     let totalPower = 0;
-    stakes?.forEach(s => {
+    stakes?.forEach((s: any) => {
         const asset = s.asset_type;
         const price = prices[asset] || 0;
         const valueUsd = s.amount * price;
@@ -232,9 +243,9 @@ export async function getAdminBillingStats(scopeUserId?: string) {
     const { data: subs } = await subsQuery;
 
     const distribution = {
-        free: subs?.filter(s => s.tier === 'free').length || 0,
-        pro: subs?.filter(s => s.tier === 'pro').length || 0,
-        enterprise: subs?.filter(s => s.tier === 'enterprise').length || 0,
+        free: subs?.filter((s: any) => s.tier === 'free').length || 0,
+        pro: subs?.filter((s: any) => s.tier === 'pro').length || 0,
+        enterprise: subs?.filter((s: any) => s.tier === 'enterprise').length || 0,
     };
 
     // 3. Active Users (using quotas as proxy for activity this month)
@@ -286,7 +297,7 @@ export async function getAdminUsers(limit = 50, offset = 0, scopeUserId?: string
     if (!subs || subs.length === 0) return [];
 
     // Manual Join for Quotas due to lack of direct FK
-    const userIds = subs.map(s => s.user_id);
+    const userIds = subs.map((s: any) => s.user_id);
     const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
 
     const { data: quotas } = await supabase
@@ -296,8 +307,8 @@ export async function getAdminUsers(limit = 50, offset = 0, scopeUserId?: string
         .eq('month_year', currentMonth);
 
     // Merge Data
-    return subs.map(sub => {
-        const quota = quotas?.find(q => q.user_id === sub.user_id);
+    return subs.map((sub: any) => {
+        const quota = quotas?.find((q: any) => q.user_id === sub.user_id);
         return {
             ...sub,
             user_usage_quotas: quota ? {
@@ -370,4 +381,4 @@ export async function getRevenueRewards(walletAddress: string) {
     }
 }
 
-export { stripe };
+export { getStripe };

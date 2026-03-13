@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from '@/utils/supabase/server';
 import crypto from 'node:crypto';
 import { InstanceConfig } from '@/types/instance';
@@ -21,10 +22,40 @@ export async function POST(request: Request) {
         let isAuthenticated = false;
         let authMethod = 'unknown';
 
-        // 1. Auth Strategy A: Invite Token (Admin / Legacy)
-        if (process.env.INSTANCE_INVITE_TOKEN && inviteToken === process.env.INSTANCE_INVITE_TOKEN) {
-            isAuthenticated = true;
-            authMethod = 'invite_token';
+        // 1. Auth Strategy A: Invite Token (Admin / Legacy) OR Secure Signed Token
+        if (inviteToken) {
+            // A.1 Static Admin Token
+            if (process.env.INSTANCE_INVITE_TOKEN && inviteToken === process.env.INSTANCE_INVITE_TOKEN) {
+                isAuthenticated = true;
+                authMethod = 'invite_token_static';
+            }
+            // A.2 Secure Signed Token (Linked to Wallet + Stake)
+            else if (inviteToken.includes(':')) {
+                try {
+                    const [tokenWallet, expiresAt, tokenSig] = inviteToken.split(':');
+                    const secret = process.env.INSTANCE_INVITE_TOKEN_SECRET || 'flexia-default-secret-2026';
+                    const expectedSig = crypto.createHmac('sha256', secret)
+                        .update(`${tokenWallet}:${expiresAt}`)
+                        .digest('hex');
+
+                    if (tokenSig === expectedSig) {
+                        const now = Date.now();
+                        if (now < parseInt(expiresAt)) {
+                            isAuthenticated = true;
+                            authMethod = 'invite_token_secure';
+                            // Override or set owner wallet from token
+                            if (!walletAddress) {
+                                // We use the wallet from the token as the owner
+                                if (!config.ownerWallet) config.ownerWallet = tokenWallet;
+                            }
+                        } else {
+                            console.warn(`[Register] Secure token expired for ${tokenWallet}`);
+                        }
+                    }
+                } catch (e) {
+                    console.error('[Register] Secure token parse error:', e);
+                }
+            }
         }
 
         // 2. Auth Strategy B: Wallet Signature (Decentralized Mining)
@@ -57,23 +88,25 @@ export async function POST(request: Request) {
 
         if (!isAuthenticated) {
             // Determine specific error message
-            if (inviteToken) return NextResponse.json({ error: 'Invalid invite token' }, { status: 401 });
+            if (inviteToken) return NextResponse.json({ error: 'Invalid or expired invite token' }, { status: 401 });
             if (signature) return NextResponse.json({ error: 'Invalid signature or missing fields' }, { status: 401 });
 
             // Default denial
-            return NextResponse.json({ error: 'Authentication required (Invite Token or Wallet Signature)' }, { status: 401 });
+            return NextResponse.json({ error: 'Authentication required (Secure Invite Token or Wallet Signature)' }, { status: 401 });
         }
 
-        // 1.5 Lookup Owner (if wallet auth)
+        // 1.5 Lookup Owner (if wallet auth or secure invite)
         let ownerId = null;
-        if (authMethod === 'wallet' && config.ownerWallet) {
+        const targetWallet = (authMethod === 'wallet' || authMethod === 'invite_token_secure') ? config.ownerWallet : null;
+
+        if (targetWallet) {
             const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
-            const owner = users.find(u => u.user_metadata?.wallet_address?.toLowerCase() === config.ownerWallet.toLowerCase());
+            const owner = users.find((u: any) => u.user_metadata?.wallet_address?.toLowerCase() === targetWallet.toLowerCase());
             if (owner) ownerId = owner.id;
 
             // FALLBACK FOR DEV BOOTSTRAP:
             if (!ownerId && process.env.NODE_ENV !== 'production') {
-                const admin = users.find(u => u.email === 'test@flexia.ai');
+                const admin = users.find((u: any) => u.email === 'test@flexia.ai');
                 if (admin) ownerId = admin.id;
             }
         }
@@ -115,6 +148,10 @@ export async function POST(request: Request) {
         console.log(`[Register] Attempting insert for ${instanceId}. Owner: ${ownerId}, Region: ${region}`);
 
         // 4. Register Instance
+        // Create record in deployed_instances
+        const forwardedFor = request.headers.get('x-forwarded-for');
+        const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : null;
+
         const { error: instError } = await supabaseAdmin
             .from('deployed_instances')
             .insert({
@@ -127,6 +164,7 @@ export async function POST(request: Request) {
                 config: config || {},
                 status: 'active',
                 last_heartbeat_at: new Date().toISOString(),
+                last_ip: clientIp, // Store initial IP
                 owner_id: ownerId,
                 org_id: orgId
             });
@@ -161,6 +199,17 @@ export async function POST(request: Request) {
             // Attempt rollback (best effort)
             await supabaseAdmin.from('deployed_instances').delete().eq('id', instanceId);
             return NextResponse.json({ error: 'Failed to save API key' }, { status: 500 });
+        }
+
+        // 5.5 Whitelist IP in Cloudflare
+        if (clientIp) {
+            console.log(`[Register] Whitelisting client IP: ${clientIp}`);
+            // Non-blocking call to Cloudflare
+            import('@/lib/cloudflare').then(({ CloudflareService }) => {
+                CloudflareService.whitelistIP(clientIp).catch(e => {
+                    console.error('[Register] Cloudflare whitelisting failed:', e);
+                });
+            });
         }
 
         // 6. Return Credentials

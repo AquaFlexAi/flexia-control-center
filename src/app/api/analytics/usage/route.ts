@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { getUserRole } from '@/utils/supabase/server';
@@ -28,12 +29,6 @@ export async function GET(request: Request) {
             .from('instance_usage_events')
             .select('timestamp, provider, model, total_tokens, cost');
 
-        // ... filters ...
-        // Note: The original code had comments about filters but didn't implement them in the snippet provided.
-        // If I need to implement them, I'd need to know logic. Assuming just existing logic is fine.
-        // Wait, the snippet showed `// ... filters ...` which implies I might be missing code if I just replace.
-        // I should read the full file first to ensure I don't lose the filter logic.
-        
         if (start) {
             query = query.gte('timestamp', start);
         }
@@ -42,24 +37,26 @@ export async function GET(request: Request) {
         }
 
         console.log('[API] /api/analytics/usage - Executing Query');
-        const { data: events, error } = await query.returns<Partial<InstanceUsageEvent>[]>();
+        // Using type assertion to avoid "Untyped function calls" error during build
+        const { data: events, error } = await (query as any).returns();
+        const typedEvents = (events || []) as Partial<InstanceUsageEvent>[];
 
         if (error) {
             console.error('[API] /api/analytics/usage - Query Error:', error);
             throw error;
         }
-        console.log(`[API] /api/analytics/usage - Query Success, rows: ${events?.length}`);
+        console.log(`[API] /api/analytics/usage - Query Success, rows: ${typedEvents.length}`);
 
         // 3. Aggregate
         const stats: UsageStatsAggregate = {
-            totalRequests: (events || []).length,
+            totalRequests: typedEvents.length,
             totalTokens: 0,
             totalCost: 0,
             byProvider: {},
             timeline: {}
         };
 
-        (events || []).forEach(e => {
+        typedEvents.forEach(e => {
             stats.totalTokens += e.total_tokens || 0;
             stats.totalCost += e.cost || 0;
 

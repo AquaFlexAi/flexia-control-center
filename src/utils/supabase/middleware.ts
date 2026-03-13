@@ -42,7 +42,10 @@ export async function updateSession(request: NextRequest) {
         request.nextUrl.pathname.startsWith('/api/supabase/auth') ||
         request.nextUrl.pathname.startsWith('/api/webhooks/stripe') ||
         request.nextUrl.pathname === '/api/health' ||
-        request.nextUrl.pathname.startsWith('/api/instances/register')
+        request.nextUrl.pathname.startsWith('/api/instances/register') ||
+        request.nextUrl.pathname.startsWith('/api/instances/heartbeat') ||
+        request.nextUrl.pathname.startsWith('/api/hosting/join') ||
+        request.nextUrl.pathname.startsWith('/api/registry/auth')
 
     // E2E Test Bypass
     const isE2EBypass = process.env.NODE_ENV === 'development' && request.headers.get('x-flexia-e2e-token') === 'flexia-dev-bypass';

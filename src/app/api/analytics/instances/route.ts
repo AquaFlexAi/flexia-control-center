@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { authorize } from '@/utils/supabase/auth-check';
 import { API_ROUTE_CONFIG } from '@/config/api-permissions';
@@ -19,24 +20,28 @@ export async function GET() {
         const { createClient } = await import("@/utils/supabase/server");
         const supabase = await createClient();
 
-        // 1. Fetch all instances
-        const { data: instances, error } = await supabase
+        // 1. Fetch all instances - Using type assertion to avoid "Untyped function calls" error during build
+        const { data: instances, error } = await (supabase
             .from('deployed_instances')
             .select('*')
-            .order('created_at', { ascending: false })
-            .returns<DeployedInstance[]>();
+            .order('created_at', { ascending: false }) as any)
+            .returns(); // Remove generic here to satisfy compiler on any-cast
+        
+        const typedInstances = instances as DeployedInstance[];
 
         if (error) throw error;
 
         // 2. Fetch aggregated usage stats per instance
-        const { data: usageEvents } = await supabase
+        const { data: usageEvents } = await (supabase
             .from('instance_usage_events')
-            .select('instance_id, total_tokens, cost, processing_time_ms, uptime_percentage, avg_latency_ms, error_rate, resource_value_usd, cpu_seconds, gpu_seconds, bandwidth_bytes')
-            .returns<Partial<InstanceUsageEvent>[]>();
+            .select('instance_id, total_tokens, cost, processing_time_ms, uptime_percentage, avg_latency_ms, error_rate, resource_value_usd, cpu_seconds, gpu_seconds, bandwidth_bytes') as any)
+            .returns();
+        
+        const typedUsageEvents = usageEvents as Partial<InstanceUsageEvent>[];
 
         // 3. Aggregate stats per instance
         const statsMap: Record<string, InstanceStatsAccumulator> = {};
-        (usageEvents || []).forEach((e) => {
+        (typedUsageEvents || []).forEach((e) => {
             if (!e.instance_id) return;
             if (!statsMap[e.instance_id]) {
                 statsMap[e.instance_id] = {
@@ -66,7 +71,7 @@ export async function GET() {
         });
 
         // 4. Compute averages and attach to instances
-        const enriched: EnrichedInstance[] = (instances || []).map((inst) => {
+        const enriched: EnrichedInstance[] = (typedInstances || []).map((inst) => {
             const s = statsMap[inst.id] || {
                 totalRequests: 0,
                 totalTokens: 0,

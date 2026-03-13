@@ -1,6 +1,7 @@
 import { HostingProvider } from '../types';
 import { GoogleCloudProvider } from '../providers/google';
 import { HetznerProvider } from '../providers/hetzner';
+import { SovereignProvider } from '../providers/sovereign';
 import { HostingManager } from './manager';
 
 export class HostingProviderFactory {
@@ -47,6 +48,9 @@ export class HostingProviderFactory {
                 return new GoogleCloudProvider(credentials);
             case 'hetzner':
                 return new HetznerProvider(credentials as any);
+            case 'sovereign':
+            case 'local':
+                return new SovereignProvider(credentials);
             default:
                 throw new Error(`Provider implementation for ${name} not found.`);
         }
@@ -76,6 +80,10 @@ export class HostingProviderFactory {
                         break;
                     case 'hetzner':
                         instance = new HetznerProvider(config.credentials as any);
+                        break;
+                    case 'sovereign':
+                    case 'local':
+                        instance = new SovereignProvider(config.credentials);
                         break;
                     default:
                         continue;

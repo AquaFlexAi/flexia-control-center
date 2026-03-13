@@ -7,22 +7,22 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 export function MainLayout({ 
-    children, 
-    isAuthPage 
+    children
 }: { 
-    children: React.ReactNode, 
-    isAuthPage: boolean 
+    children: React.ReactNode 
 }) {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     
+    // Auth pages should not show the sidebar/topbar
+    const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
+    
     // Agent Zero page needs to be full width/height without padding
-    // We can add other full-width pages here in the future
     const isFullWidth = pathname?.startsWith('/services/agent-zero');
 
     if (isAuthPage) {
         return (
-             <div className="flex-1 flex flex-col h-full overflow-hidden">
+             <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#030303]">
                 <main className="flex-1 overflow-y-auto">
                     {children}
                 </main>
@@ -31,7 +31,7 @@ export function MainLayout({
     }
 
     return (
-        <>
+        <div className="flex h-screen w-full overflow-hidden bg-[#030303] text-foreground">
             <Sidebar 
                 isOpen={isMobileMenuOpen} 
                 onClose={() => setIsMobileMenuOpen(false)} 
@@ -42,10 +42,10 @@ export function MainLayout({
                 "ml-0 lg:ml-64"
             )}>
                 <TopBar onMenuClick={() => setIsMobileMenuOpen(true)} />
-                <main className={cn("flex-1", isFullWidth ? "p-0 overflow-hidden" : "p-4 lg:p-8 overflow-y-auto")}>
+                <main className={cn("flex-1 bg-background/50", isFullWidth ? "p-0 overflow-hidden" : "p-4 lg:p-8 overflow-y-auto")}>
                     {children}
                 </main>
             </div>
-        </>
+        </div>
     );
 }

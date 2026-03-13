@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getUserSubscription, SUBSCRIPTION_QUOTAS, calculateStakingFlxCredit, getStakedAssets, getSovereignRewards, getRevenueRewards } from '@/services/billing';
@@ -22,12 +23,14 @@ export async function GET() {
         const supabaseAdmin = await createAdminClient();
 
         // Get current month's usage
-        const { data: quota } = await supabaseAdmin
+        const { data: quota } = await (supabaseAdmin
             .from('user_usage_quotas')
             .select('token_usage_current')
             .eq('user_id', user.id)
             .eq('month_year', new Date().toISOString().slice(0, 7) + '-01')
-            .single<UserUsageQuota>();
+            .single() as any);
+
+        const typedQuota = quota as UserUsageQuota;
 
         const tier = (sub?.tier || 'free') as SubscriptionTier;
         // Check if tier exists in quotas, otherwise fallback to free
@@ -92,7 +95,7 @@ export async function GET() {
             .eq('type', 'miner');
 
         // Find the active miner service
-        const minerService = services?.find(s => s.status === 'online' || s.status === 'running');
+        const minerService = services?.find((s: any) => s.status === 'online' || s.status === 'running');
 
         if (minerService) {
             // If service is running, we assume it's up. 

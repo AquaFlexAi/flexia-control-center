@@ -14,19 +14,19 @@ export default async function MarketLayout({
         redirect('/login');
     }
 
-    // Check Permissions
-    const { createAdminClient } = await import('@/utils/supabase/server');
-    const supabaseAdmin = await createAdminClient();
-    const { data: roleData } = await supabaseAdmin
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-    const { DEFAULT_ROLE_PERMISSIONS } = await import('@/utils/rbac');
-    const role = (roleData?.role || 'viewer') as keyof typeof DEFAULT_ROLE_PERMISSIONS;
-    const permissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
-    const isAuthorized = permissions.includes('billing:view_all');
+    // Check Permissions using the new DB-driven system
+    let isAuthorized = false;
+    try {
+        const { hasPermission } = await import('@/utils/rbac-db');
+        isAuthorized = await hasPermission(user.id, 'billing:view_all');
+        console.log(`[MarketLayout] User ${user.email} (Role: ${user.user_metadata?.role}) isAuthorized: ${isAuthorized}`);
+    } catch (err) {
+        console.error('[MarketLayout] Permission check failed:', err);
+        // Fallback: system admins are always authorized for market management
+        if (user.user_metadata?.role === 'system_admin') {
+            isAuthorized = true;
+        }
+    }
 
     return (
         <div className="text-slate-200 selection:bg-indigo-500/30 p-6 md:p-12 max-w-7xl mx-auto">

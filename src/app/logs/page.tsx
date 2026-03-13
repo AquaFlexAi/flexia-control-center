@@ -48,7 +48,7 @@ export default function LogsPage() {
 
         const channel = supabase
             .channel('realtime-logs')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'logs' }, (payload) => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'logs' }, (payload: any) => {
                 if (!isPaused) {
                     setLogs(prev => [...prev.slice(-49), payload.new]);
                 }

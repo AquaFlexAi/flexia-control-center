@@ -81,13 +81,13 @@ export async function distributeProfitShare(monthlyProfit: number) {
     if (!usage || usage.length === 0) return;
 
     // 2. Aggregate by instance
-    const contributions = usage.reduce((acc, event) => {
+    const contributions = usage.reduce((acc: Record<string, number>, event: any) => {
         const id = event.instance_id;
         acc[id] = (acc[id] || 0) + (event.resource_value_usd || 0);
         return acc;
-    }, {} as Record<string, number>);
+    }, {});
 
-    const totalValue = Object.values(contributions).reduce((sum, val) => sum + val, 0);
+    const totalValue = Object.values(contributions).reduce((sum, val) => (sum as number) + (val as number), 0);
 
     if (totalValue === 0) return;
 
@@ -95,7 +95,7 @@ export async function distributeProfitShare(monthlyProfit: number) {
     const profitPool = monthlyProfit * 0.50; // 50% to miners (Islamic: fair split)
 
     for (const [instanceId, value] of Object.entries(contributions)) {
-        const share = (value / totalValue) * profitPool;
+        const share = ((value as number) / (totalValue as number)) * profitPool;
         const flxAmount = share / getFLXPrice(); // Convert USD to FLX
 
         // Record distribution - fetch current value, then increment

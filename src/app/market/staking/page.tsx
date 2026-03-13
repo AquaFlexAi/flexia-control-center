@@ -34,7 +34,7 @@ async function StakingContent() {
         .select('token_usage_current')
         .eq('user_id', user.id)
         .eq('month_year', new Date().toISOString().slice(0, 7) + '-01')
-        .single<UserUsageQuota>();
+        .single() as { data: UserUsageQuota | null, error: unknown };
 
     const tier = (sub?.tier || 'free');
     const quotaConfig = SUBSCRIPTION_QUOTAS[tier as keyof typeof SUBSCRIPTION_QUOTAS] || SUBSCRIPTION_QUOTAS['free'];

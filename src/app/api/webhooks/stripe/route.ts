@@ -5,19 +5,27 @@ import { createClient } from '@supabase/supabase-js';
 import { determineTier, initializeMonthlyQuota } from '@/services/billing';
 import { calculateRevenueSplit } from '@/services/economics';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-01-27.acacia' as any,
-});
+// NOTE: Stripe and Supabase clients are intentionally NOT initialized at module level.
+// They require runtime secrets (STRIPE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY) that
+// are not available during `next build`. Instantiate inside handlers only.
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+function getStripeClient() {
+    return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-01-27.acacia' as any,
+    });
+}
 
-// Admin client for non-authenticated updates
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdmin() {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+}
 
 export async function POST(request: Request) {
+    const stripe = getStripeClient();
+    const supabaseAdmin = getSupabaseAdmin();
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
     const body = await request.text();
     const signature = (await headers()).get('stripe-signature')!;
 
@@ -36,21 +44,26 @@ export async function POST(request: Request) {
 
     switch (event.type) {
         case 'checkout.session.completed':
-            await handleCheckoutCompleted(session);
+            await handleCheckoutCompleted(session, stripe, getSupabaseAdmin());
             break;
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted':
-            await handleSubscriptionChange(session);
+            await handleSubscriptionChange(session, getSupabaseAdmin());
             break;
         case 'invoice.payment_succeeded':
-            await handleInvoicePayment(session);
+            await handleInvoicePayment(session, getSupabaseAdmin());
             break;
     }
 
     return NextResponse.json({ received: true });
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(
+    session: Stripe.Checkout.Session,
+    stripe: Stripe,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabaseAdmin: any
+) {
     const userId = session.metadata?.userId;
     const tier = (session.metadata?.tier as string) || 'pro'; // Fallback
     const customerId = session.customer as string;
@@ -98,7 +111,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     await initQuota(userId, resolvedTier);
 }
 
-async function handleSubscriptionChange(rawSubscription: Stripe.Subscription) {
+async function handleSubscriptionChange(
+    rawSubscription: Stripe.Subscription,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabaseAdmin: any
+) {
     const subscription = rawSubscription as unknown as Stripe.Subscription & {
         current_period_start: number;
         current_period_end: number;
@@ -136,7 +153,11 @@ async function handleSubscriptionChange(rawSubscription: Stripe.Subscription) {
     }
 }
 
-async function handleInvoicePayment(invoice: Stripe.Invoice) {
+async function handleInvoicePayment(
+    invoice: Stripe.Invoice,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabaseAdmin: any
+) {
     const customerId = invoice.customer as string;
 
     // Find user by stripe_customer_id
@@ -162,7 +183,7 @@ async function handleInvoicePayment(invoice: Stripe.Invoice) {
         console.log(`[Revenue Split] Miner Share (Ujrah): ${split.minerShare}`);
         console.log(`[Revenue Split] Protocol Share (Surplus): ${split.protocolShare}`);
         console.log(`[Revenue Split] Allocations: OPS=${split.allocations.ops}, RND=${split.allocations.rnd}, ProfitPool=${split.allocations.profitPool}`);
-        
+
         // TODO: Record this to a 'revenue_ledger' table in the database
     }
 

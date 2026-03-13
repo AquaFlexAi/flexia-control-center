@@ -1,19 +1,22 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 import { BrandingSettings, BrandingUpdateRequest } from '@/types/branding';
 
 export async function GET() {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
         .from('branding_settings')
         .select('*')
-        .single<BrandingSettings>();
+        .single() as any);
+    
+    const typedData = data as BrandingSettings;
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(typedData);
 }
 
 export async function POST(request: Request) {
@@ -26,7 +29,7 @@ export async function POST(request: Request) {
 
     const body = await request.json() as BrandingUpdateRequest;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
         .from('branding_settings')
         .update({
             title: body.title,
@@ -38,7 +41,9 @@ export async function POST(request: Request) {
         })
         .eq('id', '00000000-0000-0000-0000-000000000000') // Updating the global record
         .select()
-        .single<BrandingSettings>();
+        .single() as any);
+    
+    const typedData = data as BrandingSettings;
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

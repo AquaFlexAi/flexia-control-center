@@ -24,89 +24,82 @@ async function MarketOverviewContent() {
 
     if (!user) return null;
 
-    const sub = await getUserSubscription(user.id);
-    const { createAdminClient } = await import('@/utils/supabase/server');
-    const supabaseAdmin = await createAdminClient();
+    let subscriptionData: BillingStatusResponse;
+    try {
+        const sub = await getUserSubscription(user.id);
+        const { createAdminClient } = await import('@/utils/supabase/server');
+        const supabaseAdmin = await createAdminClient();
 
-    // Get current month's usage
-    const { data: quota } = await supabaseAdmin
-        .from('user_usage_quotas')
-        .select('token_usage_current')
-        .eq('user_id', user.id)
-        .eq('month_year', new Date().toISOString().slice(0, 7) + '-01')
-        .single<UserUsageQuota>();
+        // Get current month's usage
+        const { data: quota, error: quotaError } = await supabaseAdmin
+            .from('user_usage_quotas')
+            .select('token_usage_current')
+            .eq('user_id', user.id)
+            .eq('month_year', new Date().toISOString().slice(0, 7) + '-01')
+            .maybeSingle() as { data: UserUsageQuota | null, error: any };
 
-    const tier = (sub?.tier || 'free');
-    const quotaConfig = SUBSCRIPTION_QUOTAS[tier as keyof typeof SUBSCRIPTION_QUOTAS] || SUBSCRIPTION_QUOTAS['free'];
-    const limit = quotaConfig.tokens;
+        if (quotaError) console.warn('[MarketOverview] Quota fetch error:', quotaError);
 
-    let flxCredit = await calculateStakingFlxCredit(user.id);
-    const stakes = await getStakedAssets(user.id);
+        const tier = (sub?.tier || 'free');
+        const quotaConfig = SUBSCRIPTION_QUOTAS[tier as keyof typeof SUBSCRIPTION_QUOTAS] || SUBSCRIPTION_QUOTAS['free'];
+        const limit = quotaConfig.tokens;
 
-    // Blockchain Data Integration
-    let nodeStats: NodeStats = {
-        uptime: 0,
-        successfulProbes: 0,
-        totalProbes: 0,
-        isRegistered: false
-    };
-    let blockchainStake = 0;
-    let sovereignRewards;
-    let revenueRewards;
+        let flxCredit = await calculateStakingFlxCredit(user.id);
+        const stakes = await getStakedAssets(user.id);
 
-    const walletAddress = user.user_metadata?.wallet_address;
+        // Blockchain Data Integration
+        let nodeStats: NodeStats = { uptime: 0, successfulProbes: 0, totalProbes: 0, isRegistered: false };
+        let blockchainStake = 0;
+        let sovereignRewards;
+        let revenueRewards;
 
-    if (walletAddress) {
-        try {
-            // Parallel fetch for rewards
-            const [sovRewards, revRewards] = await Promise.all([
-                getSovereignRewards(walletAddress),
-                getRevenueRewards(walletAddress)
-            ]);
-            sovereignRewards = sovRewards;
-            revenueRewards = revRewards;
+        const walletAddress = user.user_metadata?.wallet_address;
+        if (walletAddress) {
+            try {
+                const [sovRewards, revRewards] = await Promise.all([
+                    getSovereignRewards(walletAddress),
+                    getRevenueRewards(walletAddress)
+                ]);
+                sovereignRewards = sovRewards;
+                revenueRewards = revRewards;
 
-            const provider = getProvider();
-            const registry = new ethers.Contract(CONTRACTS.registry.address, CONTRACTS.registry.abi, provider);
-
-            // Check if miner is registered
-            const isMiner = await registry.isMiner(walletAddress);
-
-            if (isMiner) {
-                nodeStats.isRegistered = true;
-                const minerInfo = await registry.miners(walletAddress);
-                blockchainStake = parseFloat(ethers.formatEther(minerInfo.stakedAmount));
+                const provider = getProvider();
+                const registry = new ethers.Contract(CONTRACTS.registry.address, CONTRACTS.registry.abi, provider);
+                const isMiner = await registry.isMiner(walletAddress);
+                if (isMiner) {
+                    nodeStats.isRegistered = true;
+                    const minerInfo = await registry.miners(walletAddress);
+                    blockchainStake = parseFloat(ethers.formatEther(minerInfo.stakedAmount));
+                }
+            } catch (error) {
+                console.error("Blockchain connection error:", error);
             }
-        } catch (error) {
-            console.error("Blockchain connection error:", error);
         }
+
+        flxCredit += blockchainStake;
+        const genesis = checkGenesisEligibility(nodeStats);
+        const points = calculateContributionPoints(nodeStats);
+
+        subscriptionData = {
+            tier,
+            status: sub?.status || 'active',
+            staking: { credit: flxCredit, assets: stakes },
+            usage: { current: quota?.token_usage_current || 0, limit },
+            genesis: { eligible: genesis, badge: genesis, points },
+            sovereignRewards,
+            revenueRewards
+        };
+    } catch (err) {
+        console.error('[MarketOverview] Content generation failed:', err);
+        // Minimal fallback data to prevent total page crash
+        subscriptionData = {
+            tier: 'free',
+            status: 'active',
+            staking: { credit: 0, assets: [] },
+            usage: { current: 0, limit: 10000 },
+            genesis: { eligible: false, badge: false, points: 0 }
+        };
     }
-
-    // Add blockchain stake to total credit
-    flxCredit += blockchainStake;
-
-    const genesis = checkGenesisEligibility(nodeStats);
-    const points = calculateContributionPoints(nodeStats);
-
-    const subscriptionData: BillingStatusResponse = {
-        tier,
-        status: sub?.status || 'active',
-        staking: {
-            credit: flxCredit,
-            assets: stakes
-        },
-        usage: {
-            current: quota?.token_usage_current || 0,
-            limit
-        },
-        genesis: {
-            eligible: genesis,
-            badge: genesis,
-            points
-        },
-        sovereignRewards,
-        revenueRewards
-    };
 
     return (
         <div className="space-y-12">
@@ -115,7 +108,7 @@ async function MarketOverviewContent() {
             />
 
             <PlansSection
-                currentTier={sub?.tier || 'free'}
+                currentTier={subscriptionData.tier}
             />
         </div>
     );

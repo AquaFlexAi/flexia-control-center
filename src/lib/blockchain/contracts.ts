@@ -16,9 +16,10 @@ export const SAI_TOKEN_ABI = [
 ];
 
 export const MINER_REGISTRY_ABI = [
-    "function registerMiner(string memory _machineId, bytes32 _networkKey, string memory _multiaddr) public payable",
+    "function registerMiner(string memory _machineId, bytes32 _networkKey, string memory _multiaddr, bytes memory _hardwareAttestation, string memory _hostingType) public payable",
     "function isMiner(address _wallet) public view returns (bool)",
-    "function miners(address) view returns (string machineId, uint256 reputation, uint256 stakedAmount, bool isRegistered, uint256 registeredAt)"
+    "function miners(address) view returns (string machineId, bytes32 networkKey, string multiaddr, uint256 reputation, uint256 stakedAmount, bool isRegistered, uint256 registeredAt, uint256 lastReputationUpdate, bytes hardwareAttestation, string hostingType)",
+    "function minStake() view returns (uint256)"
 ];
 
 export const SOVEREIGN_DIMENSION_ABI = [

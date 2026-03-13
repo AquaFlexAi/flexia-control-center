@@ -47,9 +47,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { can, role, loading } = usePermission();
 
-    // If loading, show a skeleton or just basic items
-    if (loading) return null; // Or return a loading skeleton
-
     return (
         <>
             {/* Mobile Overlay */}
@@ -63,7 +60,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
             <aside
                 className={cn(
-                    "w-64 glass-nav h-screen fixed left-0 top-0 z-50 flex flex-col transition-transform duration-300 lg:translate-x-0",
+                    "w-64 glass-nav h-screen fixed left-0 top-0 z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 border-r border-white/5",
                     isOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >
@@ -84,44 +81,63 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </div>
 
                     <nav className="space-y-1">
-                        {menuItems.map((item) => {
-                            if (!can(item.permission as any)) return null;
+                        {loading ? (
+                            // Loading skeleton for items
+                            [1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="h-11 w-full rounded-xl bg-white/5 animate-pulse mb-1" />
+                            ))
+                        ) : (
+                            menuItems.map((item) => {
+                                if (!can(item.permission as any)) return null;
 
-                            const Icon = item.icon;
-                            const isActive = pathname === item.href;
+                                const Icon = item.icon;
+                                const isActive = pathname === item.href;
 
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={() => onClose?.()}
-                                    className={cn(
-                                        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative",
-                                        isActive
-                                            ? "bg-white/10 text-white shadow-xl"
-                                            : "text-muted-foreground hover:bg-white/5 hover:text-white"
-                                    )}
-                                >
-                                    {isActive && (
-                                        <div className="absolute left-0 w-1 h-6 accent-gradient rounded-full" />
-                                    )}
-                                    <Icon className={cn(
-                                        "w-5 h-5 transition-transform duration-300 group-hover:scale-110",
-                                        isActive ? "text-purple-400" : "text-muted-foreground"
-                                    )} />
-                                    <span className="font-medium text-sm">{item.label}</span>
-                                </Link>
-                            );
-                        })}
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => onClose?.()}
+                                        className={cn(
+                                            "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative",
+                                            isActive
+                                                ? "bg-white/10 text-white shadow-xl"
+                                                : "text-muted-foreground hover:bg-white/5 hover:text-white"
+                                        )}
+                                    >
+                                        {isActive && (
+                                            <div className="absolute left-0 w-1 h-6 accent-gradient rounded-full" />
+                                        )}
+                                        <Icon className={cn(
+                                            "w-5 h-5 transition-transform duration-300 group-hover:scale-110",
+                                            isActive ? "text-purple-400" : "text-muted-foreground"
+                                        )} />
+                                        <span className="font-medium text-sm">{item.label}</span>
+                                    </Link>
+                                );
+                            })
+                        )}
                     </nav>
                 </div>
 
                 <div className="mt-auto p-6 border-t border-white/5">
                     <div className="glass-card !p-4 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-inner" />
+                        <div className={cn(
+                            "w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 shadow-inner",
+                            loading && "animate-pulse"
+                        )} />
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate capitalize">{role?.replace('_', ' ') || 'Guest'}</p>
-                            <p className="text-xs text-muted-foreground truncate">Active Member</p>
+                            {loading ? (
+                                <>
+                                    <div className="h-4 w-20 bg-white/10 rounded animate-pulse mb-1" />
+                                    <div className="h-3 w-12 bg-white/5 rounded animate-pulse" />
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm font-semibold text-white truncate capitalize">{role?.replace('_', ' ') || 'Guest'}</p>
+                                    <p className="text-xs text-muted-foreground truncate">Active Member</p>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

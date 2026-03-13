@@ -18,6 +18,7 @@ import LaunchWizard from "@/components/services/wizard/LaunchWizard";
 
 import RouterConfigModal from "@/components/services/router/RouterConfigModal";
 import { ServiceFiltersToolbar } from "@/components/services/ServiceFiltersToolbar";
+import AddNodeWizard from "@/components/services/wizard/AddNodeWizard";
 
 const TerminalConsole = dynamic(() => import('@/components/services/terminal-console'), { ssr: false });
 
@@ -27,6 +28,7 @@ export default function ServicesPage() {
     const [selectedRouterConfig, setSelectedRouterConfig] = useState<{ service: Service, instanceId: string } | null>(null);
     const [selectedDetails, setSelectedDetails] = useState<Service | null>(null);
     const [showLaunchWizard, setShowLaunchWizard] = useState(false);
+    const [showAddNodeWizard, setShowAddNodeWizard] = useState(false);
     const [viewMode, setViewMode] = useState<'services' | 'infrastructure'>('services');
 
     // Filters & Sorting
@@ -35,16 +37,16 @@ export default function ServicesPage() {
     const [regionFilter, setRegionFilter] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'newest' | 'name' | 'instances'>('newest');
 
-    // Fetch data with backend filtering for archived status
-    // We keep type/region filtering on client-side to preserve dropdown options (until we have separate metadata endpoints)
-    const { services, loading, actionInProgress, handleAction, deleteService, setServices, refresh } = useServices({
+    // Memoize filters to prevent infinite re-renders and WebSocket reconnections in useServices
+    const serviceFilters = useMemo(() => ({
         includeArchived: statusFilter === 'archived'
-    });
+    }), [statusFilter]);
+
+    const { services, loading, actionInProgress, handleAction, deleteService, setServices, refresh } = useServices(serviceFilters);
+
 
     const { loading: roleLoading, can } = usePermission();
     const canInfra = can('manage_infrastructure');
-
-    // Derived State for Filters (Hooks must be before any early returns)
     const uniqueTypes = useMemo(() => Array.from(new Set(services.map(s => s.type))).filter(Boolean).sort(), [services]);
     const uniqueRegions = useMemo(() => Array.from(new Set(services.map(s => s.region))).filter(Boolean).sort(), [services]);
     const filteredServices = useMemo(() => services
@@ -82,7 +84,7 @@ export default function ServicesPage() {
     }
 
     return (
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 space-y-10">
             {/* Unified Command Header */}
             <div className="flex flex-col gap-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -197,7 +199,7 @@ export default function ServicesPage() {
                     </div>
                 </>
             ) : (
-                <InfrastructureView />
+                <InfrastructureView onShowAddWizard={() => setShowAddNodeWizard(true)} />
             )}
 
             {/* Terminal Modal Overlay */}
@@ -238,6 +240,19 @@ export default function ServicesPage() {
                         onSuccess={() => {
                             refresh();
                         }}
+                    />
+                )
+            }
+
+            {/* Add Node Wizard Overlay */}
+            {
+                showAddNodeWizard && (
+                    <AddNodeWizard 
+                        onClose={() => setShowAddNodeWizard(false)} 
+                        onSuccess={() => {
+                            // Signal infrastructure view to refresh if needed
+                            // For now we'll just close it
+                        }} 
                     />
                 )
             }

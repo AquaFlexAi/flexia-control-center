@@ -1,18 +1,15 @@
 import { ethers } from "ethers";
 
-// Default to Hardhat Account 0 if not provided (DEV ONLY)
-const DEFAULT_AUTHORITY_KEY = process.env.ORACLE_WALLET_PRIVATE_KEY;
-if (!DEFAULT_AUTHORITY_KEY) {
-    throw new Error("ORACLE_WALLET_PRIVATE_KEY is not defined in environment variables");
-}
+// NOTE: ORACLE_WALLET_PRIVATE_KEY is a Vault-injected runtime secret.
+// It is NOT available during `next build`. All validation must happen at request time.
 
 export class SovereignService {
     private authorityWallet: ethers.Wallet;
 
     constructor() {
-        const privateKey = (process.env.AUTHORITY_PRIVATE_KEY || DEFAULT_AUTHORITY_KEY) as string;
+        const privateKey = process.env.AUTHORITY_PRIVATE_KEY || process.env.ORACLE_WALLET_PRIVATE_KEY;
         if (!privateKey) {
-            throw new Error("AUTHORITY_PRIVATE_KEY is not defined in environment variables");
+            throw new Error("ORACLE_WALLET_PRIVATE_KEY (or AUTHORITY_PRIVATE_KEY) is not defined. Ensure Vault has injected it at runtime.");
         }
         this.authorityWallet = new ethers.Wallet(privateKey);
     }
@@ -52,4 +49,19 @@ export class SovereignService {
     }
 }
 
-export const sovereignService = new SovereignService();
+// Lazy singleton — only instantiated on first call at request time, never at build time.
+let _instance: SovereignService | null = null;
+export function getSovereignService(): SovereignService {
+    if (!_instance) {
+        _instance = new SovereignService();
+    }
+    return _instance;
+}
+
+// Legacy export alias for any existing imports of `sovereignService`
+export const sovereignService = new Proxy({} as SovereignService, {
+    get(_target, prop) {
+        return (getSovereignService() as any)[prop];
+    }
+});
+

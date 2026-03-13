@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
 import { authorize } from "@/utils/supabase/auth-check";
@@ -56,7 +57,7 @@ export async function GET() {
     let computeSum = 0;
     let computeCount = 0;
 
-    telemetry?.forEach(t => {
+    telemetry?.forEach((t: any) => {
         if (t.metric_type === 'tokens') totalTokens += t.value;
         if (t.metric_type === 'cpu') {
             computeSum += t.value;

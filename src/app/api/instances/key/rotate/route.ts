@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from '@/utils/supabase/server';
 import crypto from 'node:crypto';
 

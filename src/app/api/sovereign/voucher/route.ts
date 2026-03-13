@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { sovereignService } from "@/lib/sovereign/SovereignService";
 import { createAdminClient } from "@/utils/supabase/server";

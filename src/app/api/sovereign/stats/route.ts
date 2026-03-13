@@ -56,7 +56,7 @@ export async function GET() {
         let totalProcessedTokens = 0;
 
         if (vouchers) {
-            vouchers.forEach(v => {
+            vouchers.forEach((v: any) => {
                 if (v.status === 'unclaimed') pendingTokens += v.tokens;
                 totalProcessedTokens += v.tokens;
             });

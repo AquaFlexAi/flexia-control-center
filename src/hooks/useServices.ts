@@ -59,35 +59,70 @@ export function useServices(filters: ServiceFilters = {}) {
     };
 
     useEffect(() => {
+        let isStopped = false;
+        let ws: WebSocket | null = null;
+        let reconnectTimer: any = null;
+
         fetchServices();
 
-        // WebSocket live services stream
-        let ws: WebSocket | null = null;
-        try {
-            ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/ws/services`);
-            ws.onmessage = (ev) => {
-                try {
-                    const msg = JSON.parse(ev.data);
-                    if (msg.type === 'services') {
-                        upsertServices(msg.data);
-                        setServices(getList() as Service[]);
+        const connectWS = () => {
+            if (isStopped) return;
+            
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                ws = new WebSocket(`${protocol}://${window.location.host}/api/ws/services`);
+                
+                ws.onmessage = (ev) => {
+                    if (isStopped) return;
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        // Defensive check: ensure msg exists and contains the expected 'type'
+                        if (msg && msg.type === 'services' && Array.isArray(msg.data)) {
+                            upsertServices(msg.data);
+                            setServices(getList() as Service[]);
+                        } else if (msg && msg.type === 'error') {
+                            console.warn('[useServices] WS received error:', msg.payload || msg.message || 'Unknown error');
+                        }
+                    } catch (err) {
+                        console.error('[useServices] WS message parse error:', err);
                     }
-                } catch {}
-            };
-        } catch {}
+                };
+
+                ws.onclose = () => {
+                    ws = null;
+                    if (!isStopped) {
+                        reconnectTimer = setTimeout(connectWS, 5000);
+                    }
+                };
+
+                ws.onerror = () => {
+                    if (ws) ws.close();
+                };
+            } catch (err) {
+                console.error('[useServices] WS connection error:', err);
+            }
+        };
+
+        connectWS();
 
         const channel = supabase
             .channel('schema-db-changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, (payload) => {
-                fetchServices();
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'services' }, () => {
+                if (!isStopped) fetchServices();
             })
             .subscribe();
 
         return () => {
+            isStopped = true;
+            if (reconnectTimer) clearTimeout(reconnectTimer);
             supabase.removeChannel(channel);
-            try { ws?.close(); } catch {}
+            if (ws) {
+                ws.onclose = null;
+                ws.close();
+            }
         };
-    }, [filters.includeArchived, filters.type, filters.region, upsertServices]);
+        // Depend on specific filter properties to avoid re-running on new object reference
+    }, [filters.includeArchived, filters.type, filters.region, upsertServices, getList]); 
 
     const handleAction = async (serviceId: string, action: ServiceAction, instanceId?: string) => {
         // If acting on specific instance, don't block the whole service card UI

@@ -44,6 +44,11 @@ async function handleProxy(request: NextRequest, path: string[]) {
         const responseData = await response.blob();
         const responseHeaders = new Headers(response.headers);
 
+        // Fetch automatically decompresses the response, so we must remove these headers
+        // otherwise the browser will fail to parse the uncompressed body.
+        responseHeaders.delete("content-encoding");
+        responseHeaders.delete("content-length");
+
         // Ensure CORS headers are clean if we are proxying
         responseHeaders.set("Access-Control-Allow-Origin", request.headers.get("origin") || "*");
 

@@ -22,22 +22,19 @@ export default async function RootLayout({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    console.log(`[RootLayout] Authenticated User: ${user.email}`);
+    console.log(`[RootLayout] ✅ User detected: ${user.email} (ID: ${user.id})`);
   } else {
-    console.log('[RootLayout] No user found - hiding navigation');
+    // In some cases (like initial page load with a fresh cookie), getUser might fail on the server 
+    // but the client-side session remains valid. We log this for debugging.
+    console.warn('[RootLayout] ⚠️ Server-side user session not detected.');
   }
 
-  // Hide navigation elements for unauthenticated users (login page)
-  const isAuthPage = !user;
-
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body className={inter.className}>
-        <div className="flex h-screen overflow-hidden bg-[#030303] text-foreground">
-          <MainLayout isAuthPage={isAuthPage}>
-            {children}
-          </MainLayout>
-        </div>
+        <MainLayout>
+          {children}
+        </MainLayout>
       </body>
     </html>
   );

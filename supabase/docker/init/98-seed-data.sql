@@ -8,12 +8,22 @@ VALUES (
         'FlexIA Control'
     ) ON CONFLICT (id) DO NOTHING;
 
--- Services
-INSERT INTO services (name, type, status, instances, region, specs, endpoint)
-VALUES 
-('OpenCode IDE', 'Development Environment', 'online', 1, 'US-East (N. Virginia)', '4 vCPU / 8GB RAM', 'https://ide.flexia.io'),
-('Agent Zero Cluster', 'Multi-Agent Swarm', 'processing', 4, 'EU-West (Ireland)', 'Auto-scaling (Node Cluster)', 'https://agents.flexia.io'),
-('AI Router', 'API Gateway', 'online', 2, 'Global Edge', 'Serverless (Next.js Edge)', 'https://api.flexia.io');
+-- Services (Needs org_id from the default organization)
+DO $$
+DECLARE
+    default_org uuid;
+BEGIN
+    SELECT id INTO default_org FROM organizations LIMIT 1;
+    
+    INSERT INTO services (name, type, status, instances, region, specs, endpoint, org_id)
+    VALUES 
+    ('OpenCode IDE', 'Development Environment', 'online', 1, 'US-East (N. Virginia)', '4 vCPU / 8GB RAM', 'https://ide.flexia.io', default_org),
+    ('Agent Zero Cluster', 'Multi-Agent Swarm', 'processing', 4, 'EU-West (Ireland)', 'Auto-scaling (Node Cluster)', 'https://agents.flexia.io', default_org),
+    ('AI Router', 'API Gateway', 'online', 2, 'Global Edge', 'Serverless (Next.js Edge)', 'https://api.flexia.io', default_org);
+EXCEPTION WHEN unique_violation THEN
+    -- Ignore if already seeded
+END $$;
+
 
 -- Organization Credits
 INSERT INTO

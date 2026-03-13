@@ -1,0 +1,25 @@
+name: flexia-secure-proxy-remote
+
+services:
+  secure-proxy:
+    container_name: flexia-secure-proxy
+    image: node:20-slim
+    command: >
+      sh -c 'npm install http-proxy dockerode kafkajs dotenv && node server.js'
+    working_dir: /app
+    ports:
+      - "${SECURE_PROXY_BIND_IP:-0.0.0.0}:2376:2376"
+    volumes:
+      # Mount the Docker socket so the proxy can talk to the local daemon
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount the server.js script from the current directory
+      - ./server.js:/app/server.js
+      # Mount certificates generated specifically for this endpoint
+      - ./certs:/app/certs
+      # Mount environment variables
+      - ./.env:/app/.env
+    environment:
+      - EVENT_STREAMING_ENABLED=false # Disable Kafka streaming if not reachable
+      - PROXY_HOST=0.0.0.0
+      - PROXY_PORT=2376
+    restart: unless-stopped

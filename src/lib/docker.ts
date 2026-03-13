@@ -90,11 +90,12 @@ export function getDockerInstance(node?: ComputeNode): Docker {
                 } else {
                     dockerClients[key] = new Docker({
                         host: url.hostname,
-                        port: parseInt(url.port || (isTcp ? '2375' : '2375'), 10)
+                        port: parseInt(url.port || (isTcp ? '2375' : '2375'), 10),
+                        timeout: 5000 // 5 second timeout so it doesn't hang UI
                     });
                 }
             } else {
-                dockerClients[key] = new Docker({ socketPath: dockerHost });
+                dockerClients[key] = new Docker({ socketPath: dockerHost, timeout: 5000 });
             }
         } else if (!node || node.connectionConfig.protocol === 'socket') {
             // Connect to local docker socket / pipe
@@ -106,14 +107,14 @@ export function getDockerInstance(node?: ComputeNode): Docker {
                 } else {
                     // Start with a sensible default, fallback logic in listContainers will correct it
                     const defaultPipe = process.env.DOCKER_PIPE || '//./pipe/docker_engine';
-                    dockerClients[key] = new Docker({ socketPath: defaultPipe });
+                    dockerClients[key] = new Docker({ socketPath: defaultPipe, timeout: 5000 });
                     if (!discoveredLocalConnection) {
                         console.log(`[Docker] Initializing local connection with default: ${defaultPipe}`);
                     }
                 }
             } else {
                 const socketPath = process.env.DOCKER_SOCK || '/var/run/docker.sock';
-                dockerClients[key] = new Docker({ socketPath });
+                dockerClients[key] = new Docker({ socketPath, timeout: 5000 });
             }
         } else if (node.connectionConfig.protocol === 'tcp') {
             // Connect via TCP (e.g. Docker DOCKER_HOST)
@@ -122,6 +123,7 @@ export function getDockerInstance(node?: ComputeNode): Docker {
             const options: Docker.DockerOptions = {
                 host,
                 port: port || 2376,
+                timeout: 5000 // 5 second timeout so it doesn't hang UI
             };
 
             // Add TLS if paths are provided
@@ -140,6 +142,7 @@ export function getDockerInstance(node?: ComputeNode): Docker {
             const sshOptions: Docker.DockerOptions = {
                 protocol: 'ssh',
                 host,
+                timeout: 5000, // 5 second timeout so it doesn't hang UI
                 username: 'root', // Default, should be configurable
                 sshOptions: {
                     // agent: process.env.SSH_AUTH_SOCK,
@@ -490,7 +493,15 @@ export async function listContainers(node?: ComputeNode): Promise<DockerContaine
                 console.log('[Docker] Pipe/TCP failed. Attempting Native CLI Bridge...');
                 if (isLocal) lastLocalDockerFallbackLogAt = Date.now();
             }
+            // Check if docker is installed first, to avoid hanging or throwing messy errors
             const { execSync } = require('child_process');
+            try {
+                execSync('which docker', { encoding: 'utf8', stdio: 'pipe' });
+            } catch (e) {
+                console.warn('[Docker] Docker CLI not found. Cannot use native bridge.');
+                return [];
+            }
+            
             const output = execSync('docker ps --format "{{json .}}" --no-trunc', { encoding: 'utf8' });
             const lines = output.trim().split('\n').filter(Boolean);
             const containers = lines.map((l: string) => {

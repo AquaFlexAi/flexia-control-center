@@ -3,17 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import { checkQuota } from '@/services/billing';
 import { QuotaVerifyResponse } from '@/types/billing';
 
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 /**
  * Verify User Quota (called by AI Routers)
  * 
  * Validates API Key and checks if user has enough tokens left.
  */
 export async function POST(request: Request) {
+    const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return NextResponse.json<QuotaVerifyResponse>({ allowed: false, error: 'Unauthorized' }, { status: 401 });

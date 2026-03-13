@@ -7,6 +7,7 @@ import crypto from 'node:crypto'; // Use node:crypto for randomUUID
 // Load env
 const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env.local';
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+dotenv.config(); // Fallback to .env and existing process.env
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:8043";
 const VAULT_ADDR = process.env.VAULT_ADDR || "http://127.0.0.1:8200";
